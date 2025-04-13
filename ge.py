@@ -1,7 +1,19 @@
+# ge.py
+
+from datasets import mkspiral
+
+from instructions.fp32 import add, sub, mul, div, swap, abs, sqrt, sin, cos
+from instructions.b32 import and_, or_, nand, nor, not_
+
 import grape.grape as grape
 import grape.algorithms as algorithms
 
 from deap import creator, base, tools
+
+# DEBUG
+import sys
+
+from pathlib import Path
 
 import numpy as np
 import random
@@ -9,21 +21,77 @@ import random
 import textwrap
 import csv
 
+from sklearn.model_selection import train_test_split
+
 import warnings
 warnings.filterwarnings("ignore")
 
-# TODO: Write fitness function
+
+def setDataSet(RANDOM_SEED):
+    data = mkspiral()
+    X = data[:,:-1]
+    Y = data[:,-1]
+
+    X_train, X_test, Y_train, Y_test = train_test_split(X, 
+                                                        Y, 
+                                                        test_size=0.3, 
+                                                        random_state=RANDOM_SEED)
+
+    X_train = np.transpose(X_train)
+    X_test = np.transpose(X_test)
+
+    BNF_GRAMMAR = grape.Grammar("grammar.bnf")
+
+    return X_train, Y_train, X_test, Y_test, BNF_GRAMMAR
+
+
+def mae(y, yhat):
+    """
+    Calculate mean absolute error between inputs.
+
+    :param y: The expected input (i.e. from dataset).
+    :param yhat: The given input (i.e. from phenotype).
+    :return: The mean absolute error.
+    """
+    
+    compare = np.equal(y, yhat)
+
+    return 1 - np.mean(compare)
+
+
 def fitness_eval(individual, points):
-    return
+    x = points[0]
+    Y = points[1]
+
+    if individual.invalid == True:
+        return np.NaN,
+
+    # Evaluate the expression
+    pred = eval(individual.phenotype)
+    assert np.isrealobj(pred)
+
+    # DEBUG
+    print(pred)
+    sys.exit()
+
+    # TODO: Generate C code, compile with GCC, and run
+    try:
+        Y_class = [1 if pred[i] > 0 else 0 for i in range(len(Y))]
+    except (IndexError, TypeError):
+        return np.NaN,
+    fitness = mae(Y, Y_class)
+    
+    return fitness,
+
 
 toolbox = base.Toolbox()
 
 # Single objective, minimising
-creator.create("FitnessMin", base.Fitness, weights=(-1.0))
+creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 
 creator.create("Individual", grape.Individual, fitness=creator.FitnessMin)
 
-toolbox.register("populationCreator", grape.sensible_initialisation, creator.Indivdual)
+toolbox.register("populationCreator", grape.sensible_initialisation, creator.Individual)
 
 toolbox.register("evaluate", fitness_eval)
 
@@ -44,7 +112,7 @@ ELITE_SIZE = 0
 HALLOFFAME_SIZE = 1
 
 MAX_INIT_TREE_DEPTH = 13
-MIN_INIT_TREE_DEPTH = 3
+MIN_INIT_TREE_DEPTH = 4
 MAX_TREE_DEPTH = 35
 MAX_WRAPS = 0
 CODON_SIZE = 255
@@ -75,20 +143,17 @@ REPORT_ITEMS = ['gen',
 N_RUNS = 1
 
 for i in range(N_RUNS):
-    print("\n\nRun: {i}\n")
+    print(f"\n\nRun: {i}\n")
 
     RANDOM_SEED = i
+
+    X_train, Y_train, X_test, Y_test, BNF_GRAMMAR = setDataSet(RANDOM_SEED)
+
     np.random.seed(RANDOM_SEED)
     random.seed(RANDOM_SEED)
 
-    # TODO: Set dataset and grammar
-    X_train = None
-    Y_train = None
-    X_test = None
-    Y_test = None
-    BNF_GRAMMAR = None
-
     population = toolbox.populationCreator(pop_size=POPULATION_SIZE,
+                                           bnf_grammar=BNF_GRAMMAR,
                                            min_init_depth=MIN_INIT_TREE_DEPTH,
                                            max_init_depth=MAX_INIT_TREE_DEPTH,
                                            codon_size=CODON_SIZE,
@@ -106,6 +171,7 @@ for i in range(N_RUNS):
     population, logbook = algorithms.ge_eaSimpleWithElitism(population,
                                                             toolbox,
                                                             cxpb=P_CROSSOVER,
+                                                            mutpb=P_MUTATION,
                                                             ngen=MAX_GENERATIONS,
                                                             elite_size=ELITE_SIZE,
                                                             bnf_grammar=BNF_GRAMMAR,
@@ -116,8 +182,8 @@ for i in range(N_RUNS):
                                                             points_test=[X_test, Y_test],
                                                             codon_consumption=CODON_CONSUMPTION,
                                                             report_items=REPORT_ITEMS,
-                                                            genome_represation=GENOME_REPRESENTATION,
-                                                            stat=stats,
+                                                            genome_representation=GENOME_REPRESENTATION,
+                                                            stats=stats,
                                                             halloffame=hof,
                                                             verbose=False)
     
@@ -148,6 +214,8 @@ for i in range(N_RUNS):
 
     r = RANDOM_SEED
     header = REPORT_ITEMS
+
+    Path(r"./results/").mkdir(parents=True, exist_ok=True)
 
     with open(r"./results/" + str(r) + ".csv", "w", encoding='UTF8', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter='\t')
