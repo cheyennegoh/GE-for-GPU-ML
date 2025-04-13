@@ -1,3 +1,0 @@
-[submodule "grape"]
-	path = grape
-	url = git@github.com:bdsul/grape.git
