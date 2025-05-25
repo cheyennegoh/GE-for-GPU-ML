@@ -12,5 +12,5 @@ def nand(dest, src):
 def nor(dest, src):
     return f"{dest} = ~({dest} | {src});"
 
-def not_():
-    return "R0 = ~R0;"
+def not_(x):
+    return f"{x} = ~{x};"

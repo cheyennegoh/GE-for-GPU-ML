@@ -1,24 +1,21 @@
 <block> ::= <op> | <block> + "\n" + <block>
 
-<op>    ::= <fp32> | <b32>
+<op>    ::= <fp32>
 
-<fp32>  ::= <num>("R0", "<arg>")
-          | <num>("<Ri>", "R0")
-          | swap("<Ri>")
-          | <fun>()
-
-<b32>   ::= <log>("R0", "<arg>") 
-          | <log>("<Ri>", "R0")
-          | not_()
+<fp32>  ::= <num>("r[0]", "<arg>")
+          | <num>("<ri>", "r[0]")
+          | <fun>("r[0]")
+          | if_gt("<arg>", "<arg>")
 
 <num>   ::= add | sub | mul | div
-<fun>   ::= abs | sqrt | sin | cos
-<log>   ::= and_ | or_ | nand | nor
+<fun>   ::= sin | cos
 
-<arg>   ::= <Ri> | <Xj>
+<arg>   ::= <ri> | <xj> | <const>
 
-<Ri>    ::= R<i>
-<Xj>    ::= X<j>
+<ri>    ::= r[<i>]
+<xj>    ::= x[<j>]
 
-<i>     ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+<i>     ::= 0 | 1 | 2 | 3 | 4 | 5
 <j>     ::= 0 | 1
+
+<const> ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9

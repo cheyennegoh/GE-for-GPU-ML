@@ -12,17 +12,20 @@ def mul(dest, src):
 def div(dest, src):
     return f"{dest} /= {src};"
 
-def swap(src):
-    return f"R8 = R0; R0 = {src}; {src} = R8;"
+def swap(a, b, temp):
+    return f"{temp} = {a}; {a} = {b}; {b} = {temp};"
 
-def abs():
-    return "R0 = abs(R0);"
+def abs(n):
+    return f"{n} = abs({n});"
 
-def sqrt():
-    return "R0 = sqrt(R0);"
+def sqrt(x):
+    return f"{x} = sqrt({x});"
 
-def sin():
-    return "R0 = __sinf(R0);"
+def sin(x):
+    return f"{x} = sinf({x});"
 
-def cos():
-    return "R0 = __cosf(R0);"
+def cos(x):
+    return f"{x} = cosf({x});"
+
+def if_gt(a, b):
+    return f"if ({a} > {b})"

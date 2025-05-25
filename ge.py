@@ -2,8 +2,7 @@
 
 from datasets import mkspiral
 
-from instructions.fp32 import add, sub, mul, div, swap, abs, sqrt, sin, cos
-from instructions.b32 import and_, or_, nand, nor, not_
+from instructions.fp32 import add, sub, mul, div, sin, cos, if_gt
 
 import grape.grape as grape
 import grape.algorithms as algorithms
@@ -13,7 +12,11 @@ from deap import creator, base, tools
 # DEBUG
 import sys
 
+import os
+import subprocess
 from pathlib import Path
+import tempfile
+import struct
 
 import numpy as np
 import random
@@ -34,11 +37,8 @@ def setDataSet(RANDOM_SEED):
 
     X_train, X_test, Y_train, Y_test = train_test_split(X, 
                                                         Y, 
-                                                        test_size=0.3, 
+                                                        test_size=0.2, 
                                                         random_state=RANDOM_SEED)
-
-    X_train = np.transpose(X_train)
-    X_test = np.transpose(X_test)
 
     BNF_GRAMMAR = grape.Grammar("grammar.bnf")
 
@@ -59,6 +59,76 @@ def mae(y, yhat):
     return 1 - np.mean(compare)
 
 
+def generate_c_code(x, expression):
+    subarrays = []
+    for row in x:
+        subarrays.append(''.join(['{', ', '.join([str(val) for val in row.tolist()]), '}']))
+    
+    declare_input_array = ''.join([f'float x[{x.shape[0]}][{x.shape[1]}] = ', '{', ', '.join(subarrays), '}'])
+
+    indented_expression = '\n'.join([f'\t{line}' for line in expression.splitlines()])
+
+    include = ('#include <math.h>\n'
+               '#include <stdio.h>\n')
+    
+    write_data = ('void write_data(char *filename, float *data, size_t size)\n'
+                  '{\n'
+                  '\tFILE *file = fopen(filename, "wb");\n'
+                  '\tfwrite(data, sizeof(float), size, file);\n'
+                  '\tfclose(file);\n'
+                  '}\n')
+
+    evaluate = (f'float evaluate(float x[{x.shape[1]}])\n'
+                '{\n'
+                f'\tfloat r[7];\n\n'
+                f'{indented_expression}\n\n'
+                f'\treturn r[0];\n'
+                '}\n')
+    
+    main = (f'int main(int argc, char *argv[])\n'
+            '{\n'
+            f'\t{declare_input_array};\n\n'
+            f'\tfloat pred[{x.shape[0]}];\n\n'
+            f'\tfor (int i = 0; i < {x.shape[0]}; i++)\n'
+            '\t{\n'
+            f'\t\tpred[i] = evaluate(x[i]);\n'
+            '\t}\n\n'
+            '\tif (argc > 1)\n'
+            '\t{\n'
+            f'\t\twrite_data(argv[1], pred, {x.shape[0]});\n'
+            '\t}\n\n'
+            '\treturn 0;\n\n'
+            '}\n')
+    
+    return '\n'.join([include, write_data, evaluate, main])
+
+
+def run_c_program(x, expression):
+    tmpdir = tempfile.TemporaryDirectory()
+
+    try:
+        code = generate_c_code(x, expression)
+        program_path = os.path.join(tmpdir.name, 'program.c')
+        with open(program_path, 'w') as f:
+            f.write(code)
+
+        executable_path = os.path.join(tmpdir.name, 'executable')
+        subprocess.run(['gcc', program_path, '-o', executable_path])
+
+        data_path = os.path.join(tmpdir.name, 'data.bin')
+        subprocess.run([executable_path, data_path])
+        
+        with open(data_path, "rb") as file:
+            file_content = file.read()
+            array = struct.unpack(f'{len(file_content) // struct.calcsize('f')}f', 
+                                file_content)
+    
+    finally:
+        tmpdir.cleanup()
+
+    return np.array(array)
+
+
 def fitness_eval(individual, points):
     x = points[0]
     Y = points[1]
@@ -67,14 +137,11 @@ def fitness_eval(individual, points):
         return np.NaN,
 
     # Evaluate the expression
-    pred = eval(individual.phenotype)
-    assert np.isrealobj(pred)
+    expression = eval(individual.phenotype)
+    assert np.isrealobj(expression)
 
-    # DEBUG
-    print(pred)
-    sys.exit()
+    pred = run_c_program(x, expression)
 
-    # TODO: Generate C code, compile with GCC, and run
     try:
         Y_class = [1 if pred[i] > 0 else 0 for i in range(len(Y))]
     except (IndexError, TypeError):
@@ -112,7 +179,7 @@ ELITE_SIZE = 0
 HALLOFFAME_SIZE = 1
 
 MAX_INIT_TREE_DEPTH = 13
-MIN_INIT_TREE_DEPTH = 4
+MIN_INIT_TREE_DEPTH = 5
 MAX_TREE_DEPTH = 35
 MAX_WRAPS = 0
 CODON_SIZE = 255
