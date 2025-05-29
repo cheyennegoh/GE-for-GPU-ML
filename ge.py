@@ -69,7 +69,8 @@ def generate_c_code(x, expression):
     indented_expression = '\n'.join([f'\t{line}' for line in expression.splitlines()])
 
     include = ('#include <math.h>\n'
-               '#include <stdio.h>\n')
+               '#include <stdio.h>\n'
+               '#include <string.h>\n')
     
     write_data = ('void write_data(char *filename, float *data, size_t size)\n'
                   '{\n'
@@ -80,7 +81,9 @@ def generate_c_code(x, expression):
 
     evaluate = (f'float evaluate(float x[{x.shape[1]}])\n'
                 '{\n'
-                f'\tfloat r[7];\n\n'
+                f'\tfloat r[6];\n'
+                f'\tmemset(r, 0, sizeof(float) * 6);\n'
+                f'\tmemcpy(r, x, sizeof(float) * {x.shape[1]});\n\n'
                 f'{indented_expression}\n\n'
                 f'\treturn r[0];\n'
                 '}\n')
