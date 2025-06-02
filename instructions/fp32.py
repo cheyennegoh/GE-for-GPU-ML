@@ -9,8 +9,8 @@ def sub(dest, src):
 def mul(dest, src):
     return f"{dest} *= {src};"
 
-def div(dest, src):
-    return f"{dest} /= {src};"
+def pdiv(dest, src):
+    return f"{dest} = ({src} != 0) ? {dest} / {src} : {dest} + 10e6;"
 
 def swap(a, b, temp):
     return f"{temp} = {a}; {a} = {b}; {b} = {temp};"

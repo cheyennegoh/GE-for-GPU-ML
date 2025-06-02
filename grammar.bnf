@@ -8,7 +8,7 @@
           | <num>("<ri>", "r[0]")
           | <fun>("r[0]")
 
-<num>   ::= add | sub | mul | div
+<num>   ::= add | sub | mul | pdiv
 <fun>   ::= sin | cos
 
 <arg>   ::= <ri> | <xj> | <const>

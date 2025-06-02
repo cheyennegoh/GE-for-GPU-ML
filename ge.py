@@ -2,7 +2,7 @@
 
 from datasets import mkspiral
 
-from instructions.fp32 import add, sub, mul, div, sin, cos, if_gt
+from instructions.fp32 import add, sub, mul, pdiv, sin, cos, if_gt
 
 import grape.grape as grape
 import grape.algorithms as algorithms
@@ -21,7 +21,6 @@ import struct
 import numpy as np
 import random
 
-import textwrap
 import csv
 
 from sklearn.model_selection import train_test_split
@@ -259,7 +258,7 @@ for i in range(N_RUNS):
     
     best = hof.items[0].phenotype
 
-    print("Best individual: \n", "\n".join(textwrap.wrap(best, 80)))
+    print("\nBest individual:\n" + eval(best))
     print("\nTraining Fitness: ", hof.items[0].fitness.values[0])
     print("Test Fitness: ", fitness_eval(hof.items[0], [X_test, Y_test])[0])
     print("Depth: ", hof.items[0].depth)
