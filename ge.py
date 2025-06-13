@@ -58,15 +58,7 @@ def mae(y, yhat):
     return 1 - np.mean(compare)
 
 
-def generate_c_code(x, expression):
-    subarrays = []
-    for row in x:
-        subarrays.append(''.join(['{', ', '.join([str(val) for val in row.tolist()]), '}']))
-    
-    declare_input_array = ''.join([f'float x[{x.shape[0]}][{x.shape[1]}] = ', '{', ', '.join(subarrays), '}'])
-
-    indented_expression = '\n'.join([f'\t{line}' for line in expression.splitlines()])
-
+def generate_c_code(x, expressions):
     include = ('#include <math.h>\n'
                '#include <stdio.h>\n'
                '#include <string.h>\n')
@@ -78,26 +70,40 @@ def generate_c_code(x, expression):
                   '\tfclose(file);\n'
                   '}\n')
 
-    evaluate = (f'float evaluate(float x[{x.shape[1]}])\n'
-                '{\n'
-                f'\tfloat r[6];\n'
-                f'\tmemset(r, 0, sizeof(float) * 6);\n'
-                f'\tmemcpy(r, x, sizeof(float) * {x.shape[1]});\n\n'
-                f'{indented_expression}\n\n'
-                f'\treturn r[0];\n'
-                '}\n')
+    evaluate = ''
+    for i, expression in enumerate(expressions):
+        indented_expression = '\n'.join([f'\t{line}' for line in expression.splitlines()])
+
+        evaluate += (f'float evaluate{i}(float x[{x.shape[1]}])\n'
+                     '{\n'
+                     f'\tfloat r[6];\n'
+                     f'\tmemset(r, 0, sizeof(float) * 6);\n'
+                     f'\tmemcpy(r, x, sizeof(float) * {x.shape[1]});\n\n'
+                     f'{indented_expression}\n\n'
+                     f'\treturn r[0];\n'
+                     '}\n')
+
+    subarrays = []
+    for row in x:
+        subarrays.append(''.join(['{', ', '.join([str(val) for val in row.tolist()]), '}']))
     
+    declare_input_array = ''.join([f'float x[{x.shape[0]}][{x.shape[1]}] = ', '{', ', '.join(subarrays), '}'])
+
+    pred = ''
+    for i in range(len(expressions)):
+        pred += f'\t\tpred[{i}][i] = evaluate{i}(x[i]);\n'
+
     main = (f'int main(int argc, char *argv[])\n'
             '{\n'
             f'\t{declare_input_array};\n\n'
-            f'\tfloat pred[{x.shape[0]}];\n\n'
+            f'\tfloat pred[{len(expressions)}][{x.shape[0]}];\n\n'
             f'\tfor (int i = 0; i < {x.shape[0]}; i++)\n'
             '\t{\n'
-            f'\t\tpred[i] = evaluate(x[i]);\n'
+            f'{pred}'
             '\t}\n\n'
             '\tif (argc > 1)\n'
             '\t{\n'
-            f'\t\twrite_data(argv[1], pred, {x.shape[0]});\n'
+            f'\t\twrite_data(argv[1], (float *)pred, {len(expressions)} * {x.shape[0]});\n'
             '\t}\n\n'
             '\treturn 0;\n\n'
             '}\n')
@@ -105,11 +111,11 @@ def generate_c_code(x, expression):
     return '\n'.join([include, write_data, evaluate, main])
 
 
-def run_c_program(x, expression):
+def run_c_program(x, expressions):
     tmpdir = tempfile.TemporaryDirectory()
 
     try:
-        code = generate_c_code(x, expression)
+        code = generate_c_code(x, expressions)
         program_path = os.path.join(tmpdir.name, 'program.c')
         with open(program_path, 'w') as f:
             f.write(code)
@@ -123,35 +129,55 @@ def run_c_program(x, expression):
         with open(data_path, "rb") as file:
             file_content = file.read()
             array = struct.unpack(f'{len(file_content) // struct.calcsize('f')}f', 
-                                file_content)
+                                  file_content)
     
     finally:
         tmpdir.cleanup()
 
-    return np.array(array)
+    return np.array(array).reshape((len(expressions), x.shape[0]))
 
 
-def fitness_eval(individual, points):
+def fitness_eval(population, points, train=True):
     x = points[0]
     Y = points[1]
 
-    if individual.invalid == True:
-        return np.NaN,
+    expressions = []
+    for individual in population:
+        if (train and individual.fitness.valid) or individual.invalid:
+            continue
 
-    # Evaluate the expression
-    expression = eval(individual.phenotype)
-    assert np.isrealobj(expression)
+        # Evaluate the expression
+        expression = eval(individual.phenotype)
+        assert np.isrealobj(expression)
 
-    pred = run_c_program(x, expression)
+        expressions.append(expression)
 
-    try:
-        Y_class = [1 if pred[i] > 0 else 0 for i in range(len(Y))]
-    except (IndexError, TypeError):
-        return np.NaN,
-    fitness = mae(Y, Y_class)
+    pred = run_c_program(x, expressions)
+
+    fitnesses = []
+    i = 0
+    for individual in population:
+        if train and individual.fitness.valid:
+            continue
+
+        if individual.invalid:
+            fitness = np.NaN
+        else:
+            try:
+                Y_class = [1 if pred[i][j] > 0 else 0 for j in range(len(Y))]
+            except (IndexError, TypeError):
+                fitness = np.NaN
+            
+            fitness = mae(Y, Y_class)
+            i += 1
     
-    return fitness,
+        if train:
+            individual.fitness.values = fitness,
+        else:
+            fitnesses.append(fitness)
 
+    if not train:
+        return fitnesses
 
 toolbox = base.Toolbox()
 
@@ -260,7 +286,7 @@ for i in range(N_RUNS):
 
     print("\nBest individual:\n" + eval(best))
     print("\nTraining Fitness: ", hof.items[0].fitness.values[0])
-    print("Test Fitness: ", fitness_eval(hof.items[0], [X_test, Y_test])[0])
+    print("Test Fitness: ", fitness_eval([hof.items[0]], [X_test, Y_test], False)[0])
     print("Depth: ", hof.items[0].depth)
     print("Length of the genome: ", len(hof.items[0].genome))
     print(f"Used portion of the genome: {hof.items[0].used_codons/len(hof.items[0].genome):.2f}")
