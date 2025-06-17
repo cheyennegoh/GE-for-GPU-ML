@@ -199,8 +199,8 @@ toolbox.register("mate", grape.crossover_onepoint)
 # Flip-int mutation
 toolbox.register("mutate", grape.mutation_int_flip_per_codon)
 
-POPULATION_SIZE = 200
-MAX_GENERATIONS = 200
+POPULATION_SIZE = 10
+MAX_GENERATIONS = 10000
 P_CROSSOVER = 0.8
 P_MUTATION = 0.01
 ELITE_SIZE = 0
@@ -235,7 +235,7 @@ REPORT_ITEMS = ['gen',
                 'selection_time',
                 'generation_time']
 
-N_RUNS = 1
+N_RUNS = 30
 
 for i in range(N_RUNS):
     print(f"\n\nRun: {i}\n")
