@@ -121,14 +121,14 @@ def run_c_program(x, expressions):
             f.write(code)
 
         executable_path = os.path.join(tmpdir.name, 'executable')
-        subprocess.run(['gcc', program_path, '-o', executable_path])
+        subprocess.run(['gcc', program_path, '-lm', '-o', executable_path])
 
         data_path = os.path.join(tmpdir.name, 'data.bin')
         subprocess.run([executable_path, data_path])
         
         with open(data_path, "rb") as file:
             file_content = file.read()
-            array = struct.unpack(f'{len(file_content) // struct.calcsize('f')}f', 
+            array = struct.unpack(f'{len(file_content) // struct.calcsize("f")}f', 
                                   file_content)
     
     finally:
