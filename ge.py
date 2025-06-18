@@ -191,7 +191,7 @@ toolbox.register("populationCreator", grape.sensible_initialisation, creator.Ind
 toolbox.register("evaluate", fitness_eval)
 
 # Tournament selection
-toolbox.register("select", tools.selTournament, tournsize=7)
+toolbox.register("select", tools.selTournament, tournsize=5)
 
 # One-point crossover
 toolbox.register("mate", grape.crossover_onepoint)
@@ -199,12 +199,12 @@ toolbox.register("mate", grape.crossover_onepoint)
 # Flip-int mutation
 toolbox.register("mutate", grape.mutation_int_flip_per_codon)
 
-POPULATION_SIZE = 10
-MAX_GENERATIONS = 10000
+POPULATION_SIZE = 100
+MAX_GENERATIONS = 1000
 P_CROSSOVER = 0.8
-P_MUTATION = 0.01
-ELITE_SIZE = 0
-HALLOFFAME_SIZE = 1
+P_MUTATION = 0.1
+ELITE_SIZE = 5
+HALLOFFAME_SIZE = 5
 
 MAX_INIT_TREE_DEPTH = 13
 MIN_INIT_TREE_DEPTH = 5
