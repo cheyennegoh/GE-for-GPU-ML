@@ -29,19 +29,23 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def setDataSet(RANDOM_SEED):
+def setDataSet(random_seed=None, test_size=0.2):
     data = mkspiral()
     X = data[:,:-1]
     Y = data[:,-1]
 
-    X_train, X_test, Y_train, Y_test = train_test_split(X, 
-                                                        Y, 
-                                                        test_size=0.2, 
-                                                        random_state=RANDOM_SEED)
+    bnf_grammar = grape.Grammar("grammar.bnf")
 
-    BNF_GRAMMAR = grape.Grammar("grammar.bnf")
+    if test_size == 0:
+        return X, Y, bnf_grammar
+    
+    else:
+        X_train, X_test, Y_train, Y_test = train_test_split(X, 
+                                                            Y, 
+                                                            test_size=0.2, 
+                                                            random_state=random_seed)
 
-    return X_train, Y_train, X_test, Y_test, BNF_GRAMMAR
+        return X_train, Y_train, X_test, Y_test, bnf_grammar
 
 
 def mae(y, yhat):
@@ -137,6 +141,14 @@ def run_c_program(x, expressions):
     return np.array(array).reshape((len(expressions), x.shape[0]))
 
 
+def evaluate_expression(phenotype):
+    expression = eval(phenotype)
+
+    assert np.isrealobj(expression)
+
+    return expression
+
+
 def fitness_eval(population, points, train=True):
     x = points[0]
     Y = points[1]
@@ -145,12 +157,8 @@ def fitness_eval(population, points, train=True):
     for individual in population:
         if (train and individual.fitness.valid) or individual.invalid:
             continue
-
-        # Evaluate the expression
-        expression = eval(individual.phenotype)
-        assert np.isrealobj(expression)
-
-        expressions.append(expression)
+        
+        expressions.append(evaluate_expression(individual.phenotype))
 
     pred = run_c_program(x, expressions)
 
@@ -179,158 +187,123 @@ def fitness_eval(population, points, train=True):
     if not train:
         return fitnesses
 
-toolbox = base.Toolbox()
 
-# Single objective, minimising
-creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+def create_toolbox(tournsize):
+    toolbox = base.Toolbox()
 
-creator.create("Individual", grape.Individual, fitness=creator.FitnessMin)
+    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+    creator.create("Individual", grape.Individual, fitness=creator.FitnessMin)
+    toolbox.register("populationCreator", grape.sensible_initialisation, creator.Individual)
+    toolbox.register("evaluate", fitness_eval)
+    toolbox.register("select", tools.selTournament, tournsize=tournsize)
+    toolbox.register("mate", grape.crossover_onepoint)
+    toolbox.register("mutate", grape.mutation_int_flip_per_codon)
 
-toolbox.register("populationCreator", grape.sensible_initialisation, creator.Individual)
+    return toolbox
 
-toolbox.register("evaluate", fitness_eval)
 
-# Tournament selection
-toolbox.register("select", tools.selTournament, tournsize=5)
-
-# One-point crossover
-toolbox.register("mate", grape.crossover_onepoint)
-
-# Flip-int mutation
-toolbox.register("mutate", grape.mutation_int_flip_per_codon)
-
-POPULATION_SIZE = 100
-MAX_GENERATIONS = 1000
-P_CROSSOVER = 0.8
-P_MUTATION = 0.1
-ELITE_SIZE = 5
-HALLOFFAME_SIZE = 5
-
-MAX_INIT_TREE_DEPTH = 13
-MIN_INIT_TREE_DEPTH = 5
-MAX_TREE_DEPTH = 35
-MAX_WRAPS = 0
-CODON_SIZE = 255
-
-CODON_CONSUMPTION = 'lazy'
-GENOME_REPRESENTATION = 'list'
-MAX_GENOME_LENGTH = None
-
-REPORT_ITEMS = ['gen',
-                'invalid',
-                'avg',
-                'std',
-                'min',
-                'max',
-                'fitness_test',
-                'best_ind_length',
-                'avg_length',
-                'best_ind_nodes',
-                'avg_nodes',
-                'best_ind_depth',
-                'avg_depth',
-                'avg_used_codons',
-                'best_ind_used_codons',
-                'structural_diversity',
-                'selection_time',
-                'generation_time']
-
-N_RUNS = 30
-
-for i in range(N_RUNS):
-    print(f"\n\nRun: {i}\n")
-
-    RANDOM_SEED = i
-
-    X_train, Y_train, X_test, Y_test, BNF_GRAMMAR = setDataSet(RANDOM_SEED)
-
-    np.random.seed(RANDOM_SEED)
-    random.seed(RANDOM_SEED)
-
-    population = toolbox.populationCreator(pop_size=POPULATION_SIZE,
-                                           bnf_grammar=BNF_GRAMMAR,
-                                           min_init_depth=MIN_INIT_TREE_DEPTH,
-                                           max_init_depth=MAX_INIT_TREE_DEPTH,
-                                           codon_size=CODON_SIZE,
-                                           codon_consumption=CODON_CONSUMPTION,
-                                           genome_representation=GENOME_REPRESENTATION)
-
-    hof = tools.HallOfFame(HALLOFFAME_SIZE)
-
+def create_stats():
     stats = tools.Statistics(key=lambda ind: ind.fitness.values)
+
     stats.register("avg", np.nanmean)
     stats.register("std", np.nanstd)
     stats.register("min", np.nanmin)
     stats.register("max", np.nanmax)
 
+    return stats
+
+
+def display_best(hof):
+    print("\nBest individual:\n" + eval(hof.items[0].phenotype))
+    print("\nTraining Fitness: ", hof.items[0].fitness.values[0])
+    print("Depth: ", hof.items[0].depth)
+    print("Length of the genome: ", len(hof.items[0].genome))
+    print(f"Used portion of the genome: {hof.items[0].used_codons/len(hof.items[0].genome):.2f}\n")
+
+
+def record_results(run, report_items, ngen, logbook):
+    Path(r"./results/").mkdir(parents=True, exist_ok=True)
+
+    with open(r"./results/" + str(run) + ".csv", "w", encoding='UTF8', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter='\t')
+        writer.writerow(report_items)
+        
+        for value in range(ngen + 1):
+            writer.writerow([logbook.select(item)[value] for item in report_items])
+
+
+def run_algorithm(X_train, Y_train, bnf_grammar, pop_size, ngen, cxpb, 
+                  mutpb, elite_size, hof_size, tournsize, max_init_depth, 
+                  min_init_depth, max_tree_depth, run=0, export_results=False):
+
+    codon_size = 255
+    codon_consumption = 'lazy'
+    genome_representation = 'list'
+
+    report_items = ['gen', 'invalid', 'avg', 'std', 'min', 'max',
+                    'best_ind_length', 'avg_length','best_ind_nodes', 'avg_nodes',
+                    'best_ind_depth', 'avg_depth', 'avg_used_codons',
+                    'best_ind_used_codons', 'structural_diversity',
+                    'selection_time', 'generation_time']
+
+    toolbox = create_toolbox(tournsize=tournsize)
+
+    population = toolbox.populationCreator(pop_size=pop_size,
+                                           bnf_grammar=bnf_grammar,
+                                           min_init_depth=min_init_depth,
+                                           max_init_depth=max_init_depth,
+                                           codon_size=codon_size,
+                                           codon_consumption=codon_consumption,
+                                           genome_representation=genome_representation)
+
+    hof = tools.HallOfFame(hof_size)
+
+    stats = create_stats()
+
     population, logbook = algorithms.ge_eaSimpleWithElitism(population,
                                                             toolbox,
-                                                            cxpb=P_CROSSOVER,
-                                                            mutpb=P_MUTATION,
-                                                            ngen=MAX_GENERATIONS,
-                                                            elite_size=ELITE_SIZE,
-                                                            bnf_grammar=BNF_GRAMMAR,
-                                                            codon_size=CODON_SIZE,
-                                                            max_tree_depth=MAX_TREE_DEPTH,
-                                                            max_genome_length=MAX_GENOME_LENGTH,
+                                                            cxpb=cxpb,
+                                                            mutpb=mutpb,
+                                                            ngen=ngen,
+                                                            elite_size=elite_size,
+                                                            bnf_grammar=bnf_grammar,
+                                                            codon_size=codon_size,
+                                                            max_tree_depth=max_tree_depth,
+                                                            max_genome_length=None,
                                                             points_train=[X_train, Y_train],
-                                                            points_test=[X_test, Y_test],
-                                                            codon_consumption=CODON_CONSUMPTION,
-                                                            report_items=REPORT_ITEMS,
-                                                            genome_representation=GENOME_REPRESENTATION,
+                                                            codon_consumption=codon_consumption,
+                                                            report_items=report_items,
+                                                            genome_representation=genome_representation,
                                                             stats=stats,
                                                             halloffame=hof,
                                                             verbose=False)
     
-    best = hof.items[0].phenotype
+    display_best(hof)
 
-    print("\nBest individual:\n" + eval(best))
-    print("\nTraining Fitness: ", hof.items[0].fitness.values[0])
-    print("Test Fitness: ", fitness_eval([hof.items[0]], [X_test, Y_test], False)[0])
-    print("Depth: ", hof.items[0].depth)
-    print("Length of the genome: ", len(hof.items[0].genome))
-    print(f"Used portion of the genome: {hof.items[0].used_codons/len(hof.items[0].genome):.2f}")
+    if export_results:
+        record_results(run, report_items, ngen, logbook)
 
-    max_fitness_values, mean_fitness_values = logbook.select("max", "avg")
-    min_fitness_values, std_fitness_values = logbook.select("min", "std")
-    best_ind_length = logbook.select("best_ind_length")
-    avg_length = logbook.select("avg_length")
-    selection_time = logbook.select("selection_time")
-    generation_time = logbook.select("generation_time")
-    gen, invalid = logbook.select("gen", "invalid")
-    avg_used_codons = logbook.select("avg_used_codons")
-    best_ind_used_codons = logbook.select("best_ind_used_codons")
-    fitness_test = logbook.select("fitness_test")
-    best_ind_nodes = logbook.select("best_ind_nodes")
-    avg_nodes = logbook.select("avg_nodes")
-    best_ind_depth = logbook.select("best_ind_depth")
-    avg_depth = logbook.select("avg_depth")
-    structural_diversity = logbook.select("structural_diversity")
+    return hof.items[0]
 
-    r = RANDOM_SEED
-    header = REPORT_ITEMS
 
-    Path(r"./results/").mkdir(parents=True, exist_ok=True)
+def multiple_runs(X_train, Y_train, bnf_grammar, pop_size, ngen, cxpb, 
+                  mutpb, elite_size, hof_size, tournsize, max_init_depth, 
+                  min_init_depth, max_tree_depth, n_runs=30, 
+                  export_results=True):
+    
+    for run in range(n_runs):
+        print(f"\nRun: {run}\n")
 
-    with open(r"./results/" + str(r) + ".csv", "w", encoding='UTF8', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter='\t')
-        writer.writerow(header)
+        np.random.seed(run)
+        random.seed(run)
 
-        for value in range(len(max_fitness_values)):
-            writer.writerow([gen[value],
-                             invalid[value],
-                             mean_fitness_values[value],
-                             std_fitness_values[value],
-                             min_fitness_values[value],
-                             max_fitness_values[value],
-                             fitness_test[value],
-                             best_ind_length[value],
-                             avg_length[value],
-                             best_ind_nodes[value],
-                             avg_nodes[value],
-                             best_ind_depth[value],
-                             avg_depth[value],
-                             avg_used_codons[value],
-                             structural_diversity[value],
-                             selection_time[value],
-                             generation_time[value]])
+        run_algorithm(X_train, Y_train, bnf_grammar, pop_size, ngen, 
+                      cxpb, mutpb, elite_size, hof_size, tournsize, 
+                      max_init_depth, min_init_depth, max_tree_depth, run, 
+                      export_results)
+
+
+# DEBUG
+# X_train, Y_train, X_test, y_test, bnf_grammar = setDataSet()
+# params = {'pop_size': 100, 'ngen': 100, 'cxpb': 0.5517681977158512, 'mutpb': 0.1501536174442644, 'elite_size': 1, 'hof_size': 8, 'tournsize': 3, 'max_init_depth': 7, 'min_init_depth': 5, 'max_tree_depth': 24}
+# run_algorithm(X_train, Y_train, bnf_grammar, **params)
