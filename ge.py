@@ -22,6 +22,7 @@ import numpy as np
 import random
 
 import csv
+import json
 
 from sklearn.model_selection import train_test_split
 
@@ -303,7 +304,21 @@ def multiple_runs(X_train, Y_train, bnf_grammar, pop_size, ngen, cxpb,
                       export_results)
 
 
-# DEBUG
-# X_train, Y_train, X_test, y_test, bnf_grammar = setDataSet()
-# params = {'pop_size': 100, 'ngen': 100, 'cxpb': 0.5517681977158512, 'mutpb': 0.1501536174442644, 'elite_size': 1, 'hof_size': 8, 'tournsize': 3, 'max_init_depth': 7, 'min_init_depth': 5, 'max_tree_depth': 24}
-# run_algorithm(X_train, Y_train, bnf_grammar, **params)
+def main():
+    X, y, bnf_grammar = setDataSet(test_size=0)
+
+    path = None
+    
+    with open(path) as jsonfile:
+        json_data = json.load(jsonfile)
+    
+    params = json_data['params']
+
+    multiple_runs(X, y, bnf_grammar, **params)
+
+    with open(r"./results/" + "params.json", "w") as jsonfile:
+        json.dump({'params': params}, jsonfile, indent=4)
+
+
+if __name__ == "__main__":
+    main()
