@@ -65,8 +65,8 @@ def main():
 
     optGE = BayesSearchCV(
         estimator=GrammaticalEvolution(bnf_grammar=bnf_grammar,
-                                    pop_size=10,
-                                    ngen=10),
+                                       pop_size=10,
+                                       ngen=10),
         search_spaces={
             'cxpb': Real(0.8, 1, prior='log-uniform'),
             'mutpb': Real(0.03, 0.3, prior='log-uniform'),

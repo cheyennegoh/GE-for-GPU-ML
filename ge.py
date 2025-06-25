@@ -1,7 +1,6 @@
 # ge.py
 
 from datasets import mkspiral
-
 from instructions.fp32 import add, sub, mul, pdiv, sin, cos, if_gt
 
 import grape.grape as grape
