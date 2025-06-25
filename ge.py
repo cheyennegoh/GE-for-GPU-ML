@@ -80,9 +80,11 @@ def generate_c_code(x, expressions):
 
         evaluate += (f'float evaluate{i}(float x[{x.shape[1]}])\n'
                      '{\n'
-                     f'\tfloat r[6];\n'
-                     f'\tmemset(r, 0, sizeof(float) * 6);\n'
-                     f'\tmemcpy(r, x, sizeof(float) * {x.shape[1]});\n\n'
+                     f'\tfloat r[6];\n\n'
+                     f'\tfor (int i = 0; i < 6; i++)\n'
+                     '\t{\n'
+                     f'\t\tr[i] = r[i % {x.shape[1]}];\n'
+                     '\t}\n\n'
                      f'{indented_expression}\n\n'
                      f'\treturn r[0];\n'
                      '}\n')
@@ -306,7 +308,7 @@ def multiple_runs(X_train, Y_train, bnf_grammar, pop_size, ngen, cxpb,
 def main():
     X, y, bnf_grammar = setDataSet(test_size=0)
 
-    path = None
+    path = "results/params.json"
     
     with open(path) as jsonfile:
         json_data = json.load(jsonfile)
