@@ -1,6 +1,8 @@
 # ge.py
 
-from datasets import mkspiral
+import datasets
+import codegen
+
 from instructions.fp32 import add, sub, mul, pdiv, sin, cos, if_gt
 
 import grape.grape as grape
@@ -11,11 +13,7 @@ from deap import creator, base, tools
 # DEBUG
 import sys
 
-import os
-import subprocess
 from pathlib import Path
-import tempfile
-import struct
 
 import numpy as np
 import random
@@ -29,15 +27,15 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def setDataSet(random_seed=None, test_size=0.2):
-    data = mkspiral()
+def set_dataset(problem, random_seed=None, test_size=0):
+    if problem == 'spiral':
+        data = datasets.mkspiral()
+
     X = data[:,:-1]
     Y = data[:,-1]
 
-    bnf_grammar = grape.Grammar("grammar.bnf")
-
     if test_size == 0:
-        return X, Y, bnf_grammar
+        return X, Y
     
     else:
         X_train, X_test, Y_train, Y_test = train_test_split(X, 
@@ -45,7 +43,12 @@ def setDataSet(random_seed=None, test_size=0.2):
                                                             test_size=0.2, 
                                                             random_state=random_seed)
 
-        return X_train, Y_train, X_test, Y_test, bnf_grammar
+        return X_train, Y_train, X_test, Y_test
+
+
+def set_grammar(problem, compiler, n_registers):
+    basename = '_'.join((problem, compiler, str(n_registers))) + '.bnf'
+    return grape.Grammar('./grammars/' + basename)
 
 
 def mae(y, yhat):
@@ -62,87 +65,6 @@ def mae(y, yhat):
     return 1 - np.mean(compare)
 
 
-def generate_c_code(x, expressions):
-    include = ('#include <math.h>\n'
-               '#include <stdio.h>\n'
-               '#include <string.h>\n')
-    
-    write_data = ('void write_data(char *filename, float *data, size_t size)\n'
-                  '{\n'
-                  '\tFILE *file = fopen(filename, "wb");\n'
-                  '\tfwrite(data, sizeof(float), size, file);\n'
-                  '\tfclose(file);\n'
-                  '}\n')
-
-    evaluate = ''
-    for i, expression in enumerate(expressions):
-        indented_expression = '\n'.join([f'\t{line}' for line in expression.splitlines()])
-
-        evaluate += (f'float evaluate{i}(float x[{x.shape[1]}])\n'
-                     '{\n'
-                     f'\tfloat r[6];\n\n'
-                     f'\tfor (int i = 0; i < 6; i++)\n'
-                     '\t{\n'
-                     f'\t\tr[i] = r[i % {x.shape[1]}];\n'
-                     '\t}\n\n'
-                     f'{indented_expression}\n\n'
-                     f'\treturn r[0];\n'
-                     '}\n')
-
-    subarrays = []
-    for row in x:
-        subarrays.append(''.join(['{', ', '.join([str(val) for val in row.tolist()]), '}']))
-    
-    declare_input_array = ''.join([f'float x[{x.shape[0]}][{x.shape[1]}] = ', '{', ', '.join(subarrays), '}'])
-
-    pred = ''
-    for i in range(len(expressions)):
-        pred += f'\t\tpred[{i}][i] = evaluate{i}(x[i]);\n'
-
-    main = (f'int main(int argc, char *argv[])\n'
-            '{\n'
-            f'\t{declare_input_array};\n\n'
-            f'\tfloat pred[{len(expressions)}][{x.shape[0]}];\n\n'
-            f'\tfor (int i = 0; i < {x.shape[0]}; i++)\n'
-            '\t{\n'
-            f'{pred}'
-            '\t}\n\n'
-            '\tif (argc > 1)\n'
-            '\t{\n'
-            f'\t\twrite_data(argv[1], (float *)pred, {len(expressions)} * {x.shape[0]});\n'
-            '\t}\n\n'
-            '\treturn 0;\n\n'
-            '}\n')
-    
-    return '\n'.join([include, write_data, evaluate, main])
-
-
-def run_c_program(x, expressions):
-    tmpdir = tempfile.TemporaryDirectory()
-
-    try:
-        code = generate_c_code(x, expressions)
-        program_path = os.path.join(tmpdir.name, 'program.c')
-        with open(program_path, 'w') as f:
-            f.write(code)
-
-        executable_path = os.path.join(tmpdir.name, 'executable')
-        subprocess.run(['gcc', program_path, '-lm', '-o', executable_path])
-
-        data_path = os.path.join(tmpdir.name, 'data.bin')
-        subprocess.run([executable_path, data_path])
-        
-        with open(data_path, "rb") as file:
-            file_content = file.read()
-            array = struct.unpack(f'{len(file_content) // struct.calcsize("f")}f', 
-                                  file_content)
-    
-    finally:
-        tmpdir.cleanup()
-
-    return np.array(array).reshape((len(expressions), x.shape[0]))
-
-
 def evaluate_expression(phenotype):
     expression = eval(phenotype)
 
@@ -152,8 +74,7 @@ def evaluate_expression(phenotype):
 
 
 def fitness_eval(population, points, train=True):
-    x = points[0]
-    Y = points[1]
+    (x, Y), compiler, n_registers = points
 
     expressions = []
     for individual in population:
@@ -162,7 +83,7 @@ def fitness_eval(population, points, train=True):
         
         expressions.append(evaluate_expression(individual.phenotype))
 
-    pred = run_c_program(x, expressions)
+    pred = codegen.run_program(x, expressions, compiler, n_registers)
 
     fitnesses = []
     i = 0
@@ -234,9 +155,12 @@ def record_results(run, report_items, ngen, logbook):
             writer.writerow([logbook.select(item)[value] for item in report_items])
 
 
-def run_algorithm(X_train, Y_train, bnf_grammar, pop_size, ngen, cxpb, 
-                  mutpb, elite_size, hof_size, tournsize, max_init_depth, 
-                  min_init_depth, max_tree_depth, run=0, export_results=False):
+def run_algorithm(X_train, Y_train, problem, compiler, n_registers, pop_size, 
+                  ngen, cxpb, mutpb, elite_size, hof_size, tournsize, 
+                  max_init_depth, min_init_depth, max_tree_depth, run=0, 
+                  export_results=False):
+    
+    bnf_grammar = set_grammar(problem, compiler, n_registers)
 
     codon_size = 255
     codon_consumption = 'lazy'
@@ -272,7 +196,9 @@ def run_algorithm(X_train, Y_train, bnf_grammar, pop_size, ngen, cxpb,
                                                             codon_size=codon_size,
                                                             max_tree_depth=max_tree_depth,
                                                             max_genome_length=None,
-                                                            points_train=[X_train, Y_train],
+                                                            points_train=([X_train, Y_train], 
+                                                                          compiler, 
+                                                                          n_registers),
                                                             codon_consumption=codon_consumption,
                                                             report_items=report_items,
                                                             genome_representation=genome_representation,
@@ -288,9 +214,9 @@ def run_algorithm(X_train, Y_train, bnf_grammar, pop_size, ngen, cxpb,
     return hof.items[0]
 
 
-def multiple_runs(X_train, Y_train, bnf_grammar, pop_size, ngen, cxpb, 
-                  mutpb, elite_size, hof_size, tournsize, max_init_depth, 
-                  min_init_depth, max_tree_depth, n_runs=30, 
+def multiple_runs(X_train, Y_train, problem, compiler, n_registers, pop_size, 
+                  ngen, cxpb, mutpb, elite_size, hof_size, tournsize, 
+                  max_init_depth, min_init_depth, max_tree_depth, n_runs=30, 
                   export_results=True):
     
     for run in range(n_runs):
@@ -299,23 +225,38 @@ def multiple_runs(X_train, Y_train, bnf_grammar, pop_size, ngen, cxpb,
         np.random.seed(run)
         random.seed(run)
 
-        run_algorithm(X_train, Y_train, bnf_grammar, pop_size, ngen, 
-                      cxpb, mutpb, elite_size, hof_size, tournsize, 
-                      max_init_depth, min_init_depth, max_tree_depth, run, 
-                      export_results)
+        run_algorithm(X_train, Y_train, problem, compiler, n_registers, 
+                      pop_size, ngen, cxpb, mutpb, elite_size, hof_size, 
+                      tournsize, max_init_depth, min_init_depth, 
+                      max_tree_depth, run, export_results)
 
 
 def main():
-    X, y, bnf_grammar = setDataSet(test_size=0)
 
-    path = "results/params.json"
+    # params = {'problem': 'spiral',
+    #           'compiler': 'gcc',
+    #           'n_registers': 6,
+    #           'pop_size': 10,
+    #           'ngen': 10,
+    #           'cxpb': 0.9814489818683625,
+    #           'mutpb': 0.21326554361971609,
+    #           'elite_size': 5,
+    #           'hof_size': 5,
+    #           'tournsize': 5,
+    #           'max_init_depth': 13,
+    #           'min_init_depth': 7,
+    #           'max_tree_depth': 25}
+
+    path = "/Users/cheyennegoh/Documents/UL/BDS/GE-for-GPU-ML/optimisation/2025-06-28T162328.json"
     
     with open(path) as jsonfile:
         json_data = json.load(jsonfile)
     
     params = json_data['params']
+    
+    X, y = set_dataset(params['problem'])
 
-    multiple_runs(X, y, bnf_grammar, **params)
+    multiple_runs(X, y, **params)
 
     with open(r"./results/" + "params.json", "w") as jsonfile:
         json.dump({'params': params}, jsonfile, indent=4)

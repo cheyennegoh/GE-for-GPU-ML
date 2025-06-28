@@ -1,8 +1,9 @@
 import ge
+import codegen
 
 from sklearn.base import BaseEstimator, ClassifierMixin
 from skopt import BayesSearchCV
-from skopt.space import Real, Integer
+from skopt.space import Real, Integer, Categorical
 
 from pathlib import Path
 from datetime import datetime
@@ -10,11 +11,15 @@ import json
 
 
 class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
-    def __init__(self, bnf_grammar, pop_size, ngen, cxpb=0.970086292848572, mutpb=0.19412625414340878, 
-                 elite_size=5, hof_size=5, tournsize=4, max_init_depth=14, 
-                 min_init_depth=6, max_tree_depth=26):
+    def __init__(self, problem='spiral', compiler='gcc', n_registers=6, 
+                 pop_size=100, ngen=1000, cxpb=0.970086292848572, 
+                 mutpb=0.19412625414340878, elite_size=5, hof_size=5, 
+                 tournsize=4, max_init_depth=14, min_init_depth=6, 
+                 max_tree_depth=26):
         
-        self.bnf_grammar = bnf_grammar
+        self.problem = problem
+        self.compiler = compiler
+        self.n_registers = n_registers
         self.pop_size = pop_size
         self.ngen = ngen
         self.cxpb = cxpb
@@ -31,25 +36,30 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
         params = self.constrain_params(vars(self))
         print(f'\nParams: {params}\n')
 
-        self.best_individual = ge.run_algorithm(X, y, self.bnf_grammar, **params)
+        self.best_individual = ge.run_algorithm(X, y, **params)
         self.model = self
         return self
 
 
     def predict(self, X):
-        pred = ge.run_c_program(X, [ge.evaluate_expression(self.best_individual.phenotype)])[0]
+        pred = codegen.run_program(X, 
+                                   [ge.evaluate_expression(self.best_individual.phenotype)],
+                                   self.compiler,
+                                   self.n_registers)[0]
         return [1 if pred[i] > 0 else 0 for i in range(len(pred))]
     
 
     def score(self, X, y):
-        return 1 - ge.fitness_eval([self.best_individual], [X, y], False)[0]
+        return 1 - ge.fitness_eval([self.best_individual], 
+                                   ([X, y], self.compiler, self.n_registers), 
+                                   False)[0]
 
 
     @staticmethod
     def constrain_params(params):
-        keys = ["pop_size", "ngen", "cxpb", "mutpb", "elite_size", "hof_size", 
-                "tournsize", "max_init_depth", "min_init_depth", 
-                "max_tree_depth"]
+        keys = ['problem', 'compiler', 'n_registers', 'pop_size', 'ngen', 
+                'cxpb', 'mutpb', 'elite_size', 'hof_size', 'tournsize', 
+                'max_init_depth', 'min_init_depth', 'max_tree_depth']
         
         params = {key: params[key] for key in keys if key in params}
 
@@ -61,13 +71,15 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
 
 
 def main():
-    X, y, bnf_grammar = ge.setDataSet(test_size=0)
+    X, y = ge.set_dataset('spiral')
 
     optGE = BayesSearchCV(
-        estimator=GrammaticalEvolution(bnf_grammar=bnf_grammar,
+        estimator=GrammaticalEvolution(problem='spiral',
+                                       compiler='gcc',
                                        pop_size=10,
                                        ngen=10),
         search_spaces={
+            'n_registers': Categorical([2, 4, 6], transform='identity'),
             'cxpb': Real(0.8, 1, prior='log-uniform'),
             'mutpb': Real(0.03, 0.3, prior='log-uniform'),
             'elite_size': Integer(6, 8), # min must be >0
