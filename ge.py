@@ -22,6 +22,7 @@ import csv
 import json
 
 from sklearn.model_selection import train_test_split
+from sklearn.utils import shuffle
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -35,12 +36,14 @@ def set_dataset(problem, random_seed=None, test_size=0):
     Y = data[:,-1]
 
     if test_size == 0:
+        X, Y = shuffle(X, Y, random_state=random_seed)
+        
         return X, Y
     
     else:
         X_train, X_test, Y_train, Y_test = train_test_split(X, 
                                                             Y, 
-                                                            test_size=0.2, 
+                                                            test_size=test_size, 
                                                             random_state=random_seed)
 
         return X_train, Y_train, X_test, Y_test
@@ -247,7 +250,7 @@ def main():
     #           'min_init_depth': 7,
     #           'max_tree_depth': 25}
 
-    path = "/Users/cheyennegoh/Documents/UL/BDS/GE-for-GPU-ML/optimisation/2025-06-28T162328.json"
+    path = "optimisation/2025-06-29T125743.json"
     
     with open(path) as jsonfile:
         json_data = json.load(jsonfile)

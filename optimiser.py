@@ -11,11 +11,11 @@ import json
 
 
 class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
-    def __init__(self, problem='spiral', compiler='gcc', n_registers=6, 
-                 pop_size=100, ngen=1000, cxpb=0.970086292848572, 
-                 mutpb=0.19412625414340878, elite_size=5, hof_size=5, 
-                 tournsize=4, max_init_depth=14, min_init_depth=6, 
-                 max_tree_depth=26):
+    def __init__(self, problem='spiral', compiler='gcc', n_registers=2, 
+                 pop_size=100, ngen=1000, cxpb=0.9461505693738687, 
+                 mutpb=0.209973308669768, elite_size=5, hof_size=5, 
+                 tournsize=4, max_init_depth=13, min_init_depth=5, 
+                 max_tree_depth=25):
         
         self.problem = problem
         self.compiler = compiler
@@ -56,13 +56,16 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
 
 
     @staticmethod
-    def constrain_params(params):
+    def constrain_params(params, n_evals=100000):
         keys = ['problem', 'compiler', 'n_registers', 'pop_size', 'ngen', 
                 'cxpb', 'mutpb', 'elite_size', 'hof_size', 'tournsize', 
                 'max_init_depth', 'min_init_depth', 'max_tree_depth']
         
         params = {key: params[key] for key in keys if key in params}
 
+        if n_evals:
+            params['ngen'] = n_evals // params['pop_size']
+        
         params['elite_size'] = min(params['elite_size'], params['hof_size'])
         params['max_init_depth'] = max(params['max_init_depth'], params['min_init_depth'])
         params['max_tree_depth'] = max(params['max_tree_depth'], params['max_init_depth'])
@@ -71,26 +74,28 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
 
 
 def main():
-    X, y = ge.set_dataset('spiral')
+    problem = 'spiral'
+    
+    X, y = ge.set_dataset(problem)
 
     optGE = BayesSearchCV(
-        estimator=GrammaticalEvolution(problem='spiral',
+        estimator=GrammaticalEvolution(problem=problem,
                                        compiler='gcc',
-                                       pop_size=10,
-                                       ngen=10),
+                                       pop_size=100),
         search_spaces={
-            'n_registers': Categorical([2, 4, 6], transform='identity'),
-            'cxpb': Real(0.8, 1, prior='log-uniform'),
-            'mutpb': Real(0.03, 0.3, prior='log-uniform'),
-            'elite_size': Integer(6, 8), # min must be >0
-            'hof_size': Integer(3, 5), # min must be >1
-            'tournsize': Integer(3, 5),
-            'max_init_depth': Integer(13, 14), # max must be <14
-            'min_init_depth': Integer(5, 7), # min must be >5
-            'max_tree_depth': Integer(25, 27)
+            # 'n_registers': Categorical([2, 4, 6], transform='identity'),
+            # 'pop_size': Categorical([10, 100, 1000], transform='identity'),
+            'cxpb': Real(0.5, 1, prior='log-uniform'),
+            'mutpb': Real(1e-3, 0.5, prior='log-uniform'),
+            # 'elite_size': Integer(6, 8), # min must be >0
+            # 'hof_size': Integer(3, 5), # min must be >1
+            # 'tournsize': Integer(3, 5),
+            # 'max_init_depth': Integer(13, 14), # max must be <14
+            # 'min_init_depth': Integer(5, 7), # min must be >5
+            # 'max_tree_depth': Integer(25, 27)
         },
-        n_iter=1,
-        cv=2,
+        n_iter=40,
+        cv=5,
         verbose=10
     )
 
