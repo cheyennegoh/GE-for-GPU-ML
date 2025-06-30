@@ -81,6 +81,7 @@ def main():
     optGE = BayesSearchCV(
         estimator=GrammaticalEvolution(problem=problem,
                                        compiler='gcc',
+                                       n_registers=2,
                                        pop_size=100),
         search_spaces={
             # 'n_registers': Categorical([2, 4, 6], transform='identity'),
