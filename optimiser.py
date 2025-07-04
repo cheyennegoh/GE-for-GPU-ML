@@ -80,14 +80,12 @@ def main():
 
     optGE = BayesSearchCV(
         estimator=GrammaticalEvolution(problem=problem,
-                                       compiler='gcc',
-                                       n_registers=2,
-                                       pop_size=100),
+                                       compiler='gcc'),
         search_spaces={
-            # 'n_registers': Categorical([2, 4, 6], transform='identity'),
-            # 'pop_size': Categorical([10, 100, 1000], transform='identity'),
-            'cxpb': Real(0.5, 1, prior='log-uniform'),
-            'mutpb': Real(1e-3, 0.5, prior='log-uniform'),
+            'n_registers': Categorical([2, 4, 6], transform='identity'),
+            'pop_size': Categorical([10, 100, 1000], transform='identity'),
+            'cxpb': Real(0.8, 1, prior='log-uniform'),
+            'mutpb': Real(0.1, 0.3, prior='log-uniform'),
             # 'elite_size': Integer(6, 8), # min must be >0
             # 'hof_size': Integer(3, 5), # min must be >1
             # 'tournsize': Integer(3, 5),

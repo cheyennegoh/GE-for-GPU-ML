@@ -236,21 +236,7 @@ def multiple_runs(X_train, Y_train, problem, compiler, n_registers, pop_size,
 
 def main():
 
-    # params = {'problem': 'spiral',
-    #           'compiler': 'gcc',
-    #           'n_registers': 6,
-    #           'pop_size': 10,
-    #           'ngen': 10,
-    #           'cxpb': 0.9814489818683625,
-    #           'mutpb': 0.21326554361971609,
-    #           'elite_size': 5,
-    #           'hof_size': 5,
-    #           'tournsize': 5,
-    #           'max_init_depth': 13,
-    #           'min_init_depth': 7,
-    #           'max_tree_depth': 25}
-
-    path = "optimisation/2025-06-29T125743.json"
+    path = None
     
     with open(path) as jsonfile:
         json_data = json.load(jsonfile)
