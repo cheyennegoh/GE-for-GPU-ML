@@ -3,7 +3,7 @@
 import math
 import numpy as np
 
-def mkspiral(a=96, b=16, c=6.5, d=104):
+def mkspiral():
     '''
         Generates training data for a network with 2 inputs and 1 output.
 
@@ -11,9 +11,9 @@ def mkspiral(a=96, b=16, c=6.5, d=104):
     '''
     ds = []
 
-    for i in range(a + 1):
-        angle = i * math.pi / b
-        radius = c * (d - i) / d
+    for i in range(96 + 1):
+        angle = i * math.pi / 16
+        radius = 6.5 * (104 - i) / 104
 
         x = radius * math.sin(angle)
         y = radius * math.cos(angle)
