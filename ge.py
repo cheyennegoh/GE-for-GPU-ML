@@ -30,7 +30,9 @@ warnings.filterwarnings("ignore")
 
 def set_dataset(problem, random_seed=None, test_size=0):
     if problem == 'spiral':
-        data = datasets.mkspiral()
+        data = datasets.spiral()
+    elif problem == 'drive':
+        data = datasets.drive()
 
     X = data[:,:-1]
     Y = data[:,-1]
