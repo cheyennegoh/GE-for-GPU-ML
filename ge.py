@@ -39,7 +39,7 @@ def set_dataset(problem, random_seed=None, test_size=0):
 
     if test_size == 0:
         X, Y = shuffle(X, Y, random_state=random_seed)
-        
+
         return X, Y
     
     else:
@@ -172,10 +172,11 @@ def run_algorithm(X_train, Y_train, problem, compiler, n_registers, pop_size,
     genome_representation = 'list'
 
     report_items = ['gen', 'invalid', 'avg', 'std', 'min', 'max',
-                    'best_ind_length', 'avg_length','best_ind_nodes', 'avg_nodes',
-                    'best_ind_depth', 'avg_depth', 'avg_used_codons',
-                    'best_ind_used_codons', 'structural_diversity',
-                    'selection_time', 'generation_time']
+                    'best_ind_length', 'avg_length', 'best_ind_nodes', 
+                    'avg_nodes', 'best_ind_depth', 'avg_depth', 
+                    'avg_used_codons', 'best_ind_used_codons', 
+                    'structural_diversity', 'selection_time', 
+                    'generation_time']
 
     toolbox = create_toolbox(tournsize=tournsize)
 
