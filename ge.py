@@ -23,30 +23,41 @@ import json
 
 from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
+from imblearn.under_sampling import RandomUnderSampler
 
 import warnings
 warnings.filterwarnings("ignore")
 
 
 def set_dataset(problem, random_seed=None, test_size=0):
+    n_samples = None
+
     if problem == 'spiral':
         data = datasets.spiral()
+        
     elif problem == 'drive':
         data = datasets.drive()
 
+        # Crashes if using too many samples
+        n_samples = 100000
+
     X = data[:,:-1]
     Y = data[:,-1]
+    
+    if problem == 'drive':
+        X, Y = RandomUnderSampler(random_state=random_seed).fit_resample(X, Y)
+
+    X, Y = shuffle(X, Y, random_state=random_seed, n_samples=n_samples)
 
     if test_size == 0:
-        X, Y = shuffle(X, Y, random_state=random_seed)
-
         return X, Y
     
     else:
         X_train, X_test, Y_train, Y_test = train_test_split(X, 
                                                             Y, 
                                                             test_size=test_size, 
-                                                            random_state=random_seed)
+                                                            random_state=random_seed,
+                                                            stratify=Y)
 
         return X_train, Y_train, X_test, Y_test
 
@@ -100,7 +111,7 @@ def fitness_eval(population, points, train=True):
             fitness = np.NaN
         else:
             try:
-                Y_class = [1 if pred[i][j] > 0 else 0 for j in range(len(Y))]
+                Y_class = [1 if pred[i][j] > 0.5 else 0 for j in range(len(Y))]
             except (IndexError, TypeError):
                 fitness = np.NaN
             
@@ -239,16 +250,32 @@ def multiple_runs(X_train, Y_train, problem, compiler, n_registers, pop_size,
 
 def main():
 
-    path = None
+    # path = None
     
-    with open(path) as jsonfile:
-        json_data = json.load(jsonfile)
+    # with open(path) as jsonfile:
+    #     json_data = json.load(jsonfile)
     
-    params = json_data['params']
+    # params = json_data['params']
+
+    params = {
+        "problem": "drive",
+        "compiler": "gcc",
+        "n_registers": 2,
+        "pop_size": 10,
+        "ngen": 10,
+        "cxpb": 0.8109132739939237,
+        "mutpb": 0.06233993054636417,
+        "elite_size": 3,
+        "hof_size": 3,
+        "tournsize": 3,
+        "max_init_depth": 13,
+        "min_init_depth": 7,
+        "max_tree_depth": 26
+    }
     
     X, y = set_dataset(params['problem'])
 
-    multiple_runs(X, y, **params)
+    multiple_runs(X, y, **params, n_runs=1)
 
     with open(r"./results/" + "params.json", "w") as jsonfile:
         json.dump({'params': params}, jsonfile, indent=4)
