@@ -43,7 +43,7 @@ def set_dataset(problem, random_seed=None, test_size=0):
 
     X = data[:,:-1]
     Y = data[:,-1]
-    
+
     if problem == 'drive':
         X, Y = RandomUnderSampler(random_state=random_seed).fit_resample(X, Y)
 
@@ -111,7 +111,7 @@ def fitness_eval(population, points, train=True):
             fitness = np.NaN
         else:
             try:
-                Y_class = [1 if pred[i][j] > 0.5 else 0 for j in range(len(Y))]
+                Y_class = [0 if pred[i][j] < 0.5 else 1 for j in range(len(Y))]
             except (IndexError, TypeError):
                 fitness = np.NaN
             
