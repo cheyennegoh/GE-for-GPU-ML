@@ -1,31 +1,31 @@
 # fp32.py
 
-def add(dest, src):
-    return f"{dest} += {src};"
+def add(y, x1, x2):
+    return f"{y} = {x1} + {x2};"
 
-def sub(dest, src):
-    return f"{dest} -= {src};"
+def sub(y, x1, x2):
+    return f"{y} = {x1} - {x2};"
 
-def mul(dest, src):
-    return f"{dest} *= {src};"
+def mul(y, x1, x2):
+    return f"{y} = {x1} * {x2};"
 
-def pdiv(dest, src):
-    return f"{dest} = ({src} != 0) ? {dest} / {src} : {dest} + 10e6;"
+def pdiv(y, x1, x2):
+    return f"{y} = ({x2} != 0) ? {x1} / {x2} : {x1} + 10e6;"
 
-def swap(a, b, temp):
-    return f"{temp} = {a}; {a} = {b}; {b} = {temp};"
+def swap(a, b, tmp):
+    return f"{tmp} = {a}; {a} = {b}; {b} = {tmp};"
 
-def abs(n):
-    return f"{n} = abs({n});"
+def abs(y, x):
+    return f"{y} = abs({x});"
 
-def sqrt(x):
-    return f"{x} = sqrt({x});"
+def sqrt(y, x):
+    return f"{y} = sqrt({x});"
 
-def sin(x):
-    return f"{x} = sinf({x});"
+def sin(y, x):
+    return f"{y} = sinf({x});"
 
-def cos(x):
-    return f"{x} = cosf({x});"
+def cos(y, x):
+    return f"{y} = cosf({x});"
 
 def if_gt(a, b):
     return f"if ({a} > {b})"
