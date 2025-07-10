@@ -18,8 +18,8 @@ def swap(a, b, tmp):
 def abs(y, x):
     return f"{y} = abs({x});"
 
-def sqrt(y, x):
-    return f"{y} = sqrt({x});"
+def psqrt(y, x):
+    return f"{y} = sqrt(abs({x}));"
 
 def sin(y, x):
     return f"{y} = sinf({x});"
