@@ -27,7 +27,7 @@ def spiral():
     return np.array(ds)
 
 
-def drive():
+def drive(window_size=3, greyscale=True):
     handle = 'andrewmvd/drive-digital-retinal-images-for-vessel-extraction'
     drive_path = os.path.join(kagglehub.dataset_download(handle), 'DRIVE', 'training')
 
@@ -36,7 +36,9 @@ def drive():
     for n in range(21, 40 + 1):
         image_path = os.path.join(drive_path, 'images', f'{n}_training.tif')
         with Image.open(image_path) as im:
-            image = np.array(im.convert('L'))
+            if greyscale:
+                im = im.convert('L')
+            image = np.array(im)
 
         manual_path = os.path.join(drive_path, '1st_manual', f'{n}_manual1.gif')
         with Image.open(manual_path) as im:
@@ -46,10 +48,15 @@ def drive():
         with Image.open(mask_path) as im:
             mask = np.array(im)
 
-        image = np.lib.stride_tricks.sliding_window_view(image, (3, 3))
-        manual = manual[1:-1, 1:-1] // 255
-        mask = mask[1:-1, 1:-1].astype(bool)
+        image = np.lib.stride_tricks.sliding_window_view(image, 
+                                                         (window_size, window_size), 
+                                                         axis=(0, 1)) / 255
+        
+        trim = (window_size - 1) // 2
 
-        ds.append(np.dstack((image.reshape(*image.shape[:-2], -1), manual))[mask])
+        manual = manual[trim:-trim, trim:-trim] / 255
+        mask = mask[trim:-trim, trim:-trim].astype(bool)
+
+        ds.append(np.dstack((image.reshape(*image.shape[:2], -1), manual))[mask])
             
     return np.vstack(ds)
