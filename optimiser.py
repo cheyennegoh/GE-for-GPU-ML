@@ -16,7 +16,7 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
     def __init__(self, problem='spiral', compiler='gcc', n_registers=2, 
                  pop_size=100, ngen=1000, cxpb=0.9461505693738687, 
                  mutpb=0.209973308669768, elite_size=5, hof_size=5, 
-                 tournsize=4, max_init_depth=13, min_init_depth=5, 
+                 tournsize=4, max_init_depth=13, min_init_depth=6, 
                  max_tree_depth=25):
         
         self.problem = problem
@@ -48,7 +48,7 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
                                    [ge.evaluate_expression(self.best_individual.phenotype)],
                                    self.compiler,
                                    self.n_registers)[0]
-        return [1 if pred[i] > 0 else 0 for i in range(len(pred))]
+        return [0 if pred[i] < 0.5 else 1 for i in range(len(pred))]
     
 
     def score(self, X, y):
@@ -86,14 +86,14 @@ def main():
         search_spaces={
             'n_registers': Categorical([2, 4, 6], transform='identity'),
             'pop_size': Categorical([10, 100, 1000], transform='identity'),
-            'cxpb': Real(0.8, 1, prior='log-uniform'),
-            'mutpb': Real(0.1, 0.3, prior='log-uniform'),
-            # 'elite_size': Integer(6, 8), # min must be >0
-            # 'hof_size': Integer(3, 5), # min must be >1
-            # 'tournsize': Integer(3, 5),
-            # 'max_init_depth': Integer(13, 14), # max must be <14
-            # 'min_init_depth': Integer(5, 7), # min must be >5
-            # 'max_tree_depth': Integer(25, 27)
+            'cxpb': Real(0.8, 1.0, prior='log-uniform'),
+            'mutpb': Real(1e3, 0.3, prior='log-uniform'),
+            'elite_size': Integer(5, 7), # min must be >= 0
+            'hof_size': Integer(5, 7), # min must be >= 1
+            'tournsize': Integer(3, 5),
+            'max_init_depth': Integer(12, 14), # max must be <= 14
+            'min_init_depth': Integer(6, 7), # min must be >= 6
+            'max_tree_depth': Integer(24, 26)
         },
         n_iter=40,
         cv=5,
