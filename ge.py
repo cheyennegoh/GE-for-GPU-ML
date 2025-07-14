@@ -39,7 +39,7 @@ def set_dataset(problem, random_seed=None, test_size=0):
         data = datasets.drive()
 
         # Crashes if using too many samples
-        n_samples = 100000
+        n_samples = 10000
 
     X = data[:,:-1]
     Y = data[:,-1]
