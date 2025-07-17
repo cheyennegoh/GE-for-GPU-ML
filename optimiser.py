@@ -14,9 +14,9 @@ import json
 
 class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
     def __init__(self, problem='spiral', compiler='gcc', n_registers=2, 
-                 pop_size=100, ngen=1000, cxpb=0.9461505693738687, 
-                 mutpb=0.209973308669768, elite_size=5, hof_size=5, 
-                 tournsize=4, max_init_depth=13, min_init_depth=6, 
+                 pop_size=1000, ngen=100, cxpb=0.8270227953815832, 
+                 mutpb=0.21718583795615884, elite_size=4, hof_size=6, 
+                 tournsize=3, max_init_depth=13, min_init_depth=7, 
                  max_tree_depth=25):
         
         self.problem = problem
@@ -84,15 +84,15 @@ def main():
         estimator=GrammaticalEvolution(problem=problem,
                                        compiler='gcc'),
         search_spaces={
-            'n_registers': Categorical([2, 4, 6], transform='identity'),
-            'pop_size': Categorical([10, 100, 1000], transform='identity'),
-            'cxpb': Real(0.8, 1.0, prior='log-uniform'),
-            'mutpb': Real(1e3, 0.3, prior='log-uniform'),
-            'elite_size': Integer(5, 7), # min must be >= 0
+            'n_registers': Categorical([2, 4], transform='identity'),
+            'pop_size': Categorical([100, 1000], transform='identity'),
+            'cxpb': Real(0.7, 0.9, prior='log-uniform'),
+            'mutpb': Real(0.1, 0.3, prior='log-uniform'),
+            'elite_size': Integer(4, 6), # min must be >= 0
             'hof_size': Integer(5, 7), # min must be >= 1
-            'tournsize': Integer(3, 5),
+            'tournsize': Integer(2, 4),
             'max_init_depth': Integer(12, 14), # max must be <= 14
-            'min_init_depth': Integer(6, 7), # min must be >= 6
+            'min_init_depth': Integer(6, 8), # min must be >= 6
             'max_tree_depth': Integer(24, 26)
         },
         n_iter=40,
