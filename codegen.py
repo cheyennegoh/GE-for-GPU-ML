@@ -38,7 +38,7 @@ def generate_code_gcc(x, expressions, n_registers):
     for row in x:
         subarrays.append(''.join(['{', ', '.join([str(val) for val in row.tolist()]), '}']))
     
-    declare_input_array = ''.join([f'float x[{x.shape[0]}][{x.shape[1]}] = ', '{', ', '.join(subarrays), '}'])
+    declare_input_array = ''.join([f'static float x[{x.shape[0]}][{x.shape[1]}] = ', '{', ', '.join(subarrays), '}'])
 
     pred = ''
     for i in range(len(expressions)):
@@ -47,7 +47,7 @@ def generate_code_gcc(x, expressions, n_registers):
     main = (f'int main(int argc, char *argv[])\n'
             '{\n'
             f'\t{declare_input_array};\n\n'
-            f'\tfloat pred[{len(expressions)}][{x.shape[0]}];\n\n'
+            f'\tstatic float pred[{len(expressions)}][{x.shape[0]}];\n\n'
             f'\tfor (int i = 0; i < {x.shape[0]}; i++)\n'
             '\t{\n'
             f'{pred}'

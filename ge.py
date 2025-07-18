@@ -29,17 +29,12 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def set_dataset(problem, random_seed=None, test_size=0):
-    n_samples = None
-
+def set_dataset(problem, random_seed=None, test_size=0, n_samples=None):
     if problem == 'spiral':
         data = datasets.spiral()
         
     elif problem == 'drive':
         data = datasets.drive()
-
-        # Crashes if using too many samples
-        n_samples = 10000
 
     X = data[:,:-1]
     Y = data[:,-1]
