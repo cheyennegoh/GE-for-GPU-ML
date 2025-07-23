@@ -92,7 +92,7 @@ def main():
             'hof_size': Integer(5, 7), # min must be >= 1
             'tournsize': Integer(2, 4),
             'max_init_depth': Integer(12, 14), # max must be <= 14
-            'min_init_depth': Integer(6, 8), # min must be >= 6
+            'min_init_depth': Integer(6, 8), # min must be >= 5
             'max_tree_depth': Categorical([50, 75, 100], transform='identity')
         },
         n_iter=40,
