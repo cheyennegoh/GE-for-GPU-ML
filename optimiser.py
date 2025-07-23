@@ -93,7 +93,7 @@ def main():
             'tournsize': Integer(2, 4),
             'max_init_depth': Integer(12, 14), # max must be <= 14
             'min_init_depth': Integer(6, 8), # min must be >= 6
-            'max_tree_depth': Integer(24, 26)
+            'max_tree_depth': Categorical([50, 75, 100], transform='identity')
         },
         n_iter=40,
         cv=5,

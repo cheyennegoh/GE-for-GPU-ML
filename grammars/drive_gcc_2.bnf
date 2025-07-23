@@ -4,8 +4,9 @@
 
 <op>    ::= <fp32>
 
-<fp32>  ::= <num>("<ri>", "<arg>", "<arg>")
-          | <fun>("<ri>", "<arg>")
+<fp32>  ::= <num>("r[0]", "<arg>")
+          | <num>("<ri>", "r[0]")
+          | <fun>("r[0]")
 
 <num>   ::= add | sub | mul | pdiv
 <fun>   ::= sin | cos

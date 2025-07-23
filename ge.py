@@ -253,7 +253,7 @@ def main():
     # params = json_data['params']
 
     params = {
-        "problem": "drive",
+        "problem": "spiral",
         "compiler": "gcc",
         "n_registers": 2,
         "pop_size": 10,
