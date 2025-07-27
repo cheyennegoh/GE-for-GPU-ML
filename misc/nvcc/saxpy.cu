@@ -1,4 +1,8 @@
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+
 #include <stdio.h>
+#include <algorithm>
 
 __global__
 void saxpy(int n, float a, float *x, float *y)
@@ -32,7 +36,7 @@ int main(void)
 
   float maxError = 0.0f;
   for (int i = 0; i < N; i++)
-    maxError = max(maxError, abs(y[i]-4.0f));
+    maxError = std::max(maxError, std::abs(y[i]-4.0f));
   printf("Max error: %f\n", maxError);
 
   cudaFree(d_x);
