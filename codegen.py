@@ -81,7 +81,7 @@ def generate_code_nvcc(x, expressions, n_registers):
                      '\tint tid = blockIdx.x * blockDim.x + threadIdx.x;\n'
                      f'\tif (tid >= {x.shape[0]}) return;\n\n'
                      f'\tx += {x.shape[1]} * tid;\n'
-                     f'\tpred += {len(expressions)} * {i};\n\n'
+                     f'\tpred += {x.shape[0]} * {i};\n\n'
                      f'\tfloat r[{n_registers}];\n'
                      f'\tfor (int i = 0; i < {n_registers}; i++) r[i] = x[i % {x.shape[1]}];\n\n'
                      f'{indented_expression}\n\n'
@@ -135,9 +135,9 @@ def run_program(x, expressions, compiler, n_registers):
         executable_path = os.path.join(tmpdirname, 'executable')
 
         if compiler == 'gcc':
-            compile_command = ['gcc', program_path, '-lm', '-o', executable_path]
+            compile_command = ['gcc', program_path, '-o', executable_path, '-lm']
         elif compiler == 'nvcc':
-            compile_command = ['nvcc', program_path, '-o', executable_path]
+            compile_command = ['nvcc', program_path, '-o', executable_path, '-G', '-use_fast_math']
         
         subprocess.run(compile_command)
 
