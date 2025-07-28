@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import struct
 import numpy as np
-
+# import time
 
 def generate_code_gcc(x, expressions, n_registers):
     include = ('#include <math.h>\n'
@@ -137,13 +137,24 @@ def run_program(x, expressions, compiler, n_registers):
         if compiler == 'gcc':
             compile_command = ['gcc', program_path, '-o', executable_path, '-lm']
         elif compiler == 'nvcc':
-            compile_command = ['nvcc', program_path, '-o', executable_path, '-G', '-use_fast_math']
+            compile_command = ['nvcc', program_path, '-o', executable_path, '-use_fast_math', '-O0',  '-Xptxas', '-O0', '-Xcicc', '-O0']
         
+        # start_time = time.time()
+
         subprocess.run(compile_command)
 
+        # duration = time.time() - start_time
+        # print("\nCompilation time:", duration, end='\t')
+
         data_path = os.path.join(tmpdirname, 'data.bin')
+
+        # start_time = time.time()
+
         subprocess.run([executable_path, data_path])
-        
+
+        # duration = time.time() - start_time
+        # print("Execution time:", duration, end='\n\n')
+
         with open(data_path, "rb") as file:
             file_content = file.read()
             array = struct.unpack(f'{len(file_content) // struct.calcsize("f")}f', 
