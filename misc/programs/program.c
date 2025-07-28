@@ -1,6 +1,14 @@
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
+void read_data(char *filename, float *data, size_t size)
+{
+	FILE *file = fopen(filename, "rb");
+	fread(data, sizeof(float), size, file);
+	fclose(file);
+}
 
 void write_data(char *filename, float *data, size_t size)
 {
@@ -1982,22 +1990,32 @@ float evaluate4(float x[2])
 
 int main(int argc, char *argv[])
 {
-	static float x[10][2] = {{1.8188397769118172, 1.2153098847303805}, {6.0, 3.6739403974420594e-16}, {-0.9375247682205794, 1.4031049707605447}, {1.2858791391047208e-15, -3.5}, {1.6742400165972686, 4.041972954736879}, {-1.23743686707646, 1.2374368670764564}, {4.001447509206, -2.673681746406834}, {-5.946010762444584, -1.1827350772227778}, {-3.0, -1.2858791391047208e-15}, {3.0036549212348937, 0.5974641111743921}};
-	static float pred[5][10];
+	float *x, *pred;
 
-	for (int i = 0; i < 10; i++)
-	{
-		pred[0][i] = evaluate0(x[i]);
-		pred[1][i] = evaluate1(x[i]);
-		pred[2][i] = evaluate2(x[i]);
-		pred[3][i] = evaluate3(x[i]);
-		pred[4][i] = evaluate4(x[i]);
-	}
+	x = (float *)malloc(10 * 2 * sizeof(float));
+	pred = (float *)malloc(5 * 10 * sizeof(float));
 
 	if (argc > 1)
 	{
-		write_data(argv[1], (float *)pred, 5 * 10);
+		read_data(argv[1], (float *)x, 10 * 2);
 	}
+
+	for (int i = 0; i < 10; i++)
+	{
+		pred[10 * 0 + i] = evaluate0(&x[5 * i]);
+		pred[10 * 1 + i] = evaluate1(&x[5 * i]);
+		pred[10 * 2 + i] = evaluate2(&x[5 * i]);
+		pred[10 * 3 + i] = evaluate3(&x[5 * i]);
+		pred[10 * 4 + i] = evaluate4(&x[5 * i]);
+	}
+
+	if (argc > 2)
+	{
+		write_data(argv[2], (float *)pred, 5 * 10);
+	}
+
+	free(x);
+	free(pred);
 
 	return 0;
 }

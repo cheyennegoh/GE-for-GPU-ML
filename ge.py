@@ -29,7 +29,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-# TO DO: write data to file (use generic name and add to gitignore)
 def set_dataset(problem, random_seed=42, test_size=0, n_samples=None):
     if problem == 'spiral':
         data = datasets.spiral()
@@ -44,9 +43,6 @@ def set_dataset(problem, random_seed=42, test_size=0, n_samples=None):
         X, Y = RandomUnderSampler(random_state=random_seed).fit_resample(X, Y)
 
     X, Y = shuffle(X, Y, random_state=random_seed, n_samples=n_samples)
-
-    # write input data to file
-    
 
     if test_size == 0:
         return X, Y
@@ -98,6 +94,7 @@ def fitness_eval(population, points, train=True):
         
         expressions.append(evaluate_expression(individual.phenotype))
 
+    # TODO: Check that NVCC implementation works correctly
     pred = codegen.run_program(x, expressions, compiler, n_registers)
 
     fitnesses = []
@@ -257,11 +254,11 @@ def main():
     # params = json_data['params']
 
     params = {
-        "problem": "drive",
+        "problem": "spiral",
         "compiler": "gcc",
         "n_registers": 2,
-        "pop_size": 10,
-        "ngen": 3,
+        "pop_size": 5,
+        "ngen": 10,
         "cxpb": 0.8109132739939237,
         "mutpb": 0.06233993054636417,
         "elite_size": 3,
