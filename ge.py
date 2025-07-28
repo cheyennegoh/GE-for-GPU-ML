@@ -29,7 +29,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def set_dataset(problem, random_seed=None, test_size=0, n_samples=None):
+def set_dataset(problem, random_seed=42, test_size=0, n_samples=None):
     if problem == 'spiral':
         data = datasets.spiral()
         
