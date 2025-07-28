@@ -2,6 +2,13 @@
 #include "device_launch_parameters.h"
 #include <stdio.h>
 
+void read_data(char *filename, float *data, size_t size)
+{
+	FILE *file = fopen(filename, "wb");
+	fread(data, sizeof(float), size, file);
+	fclose(file);
+}
+
 void write_data(char *filename, float *data, size_t size)
 {
 	FILE *file = fopen(filename, "wb");
@@ -2012,10 +2019,17 @@ void evaluate4(float *x, float *pred)
 
 int main(int argc, char *argv[])
 {
-	static float x[10][2] = {{1.8188397769118172, 1.2153098847303805}, {6.0, 3.6739403974420594e-16}, {-0.9375247682205794, 1.4031049707605447}, {1.2858791391047208e-15, -3.5}, {1.6742400165972686, 4.041972954736879}, {-1.23743686707646, 1.2374368670764564}, {4.001447509206, -2.673681746406834}, {-5.946010762444584, -1.1827350772227778}, {-3.0, -1.2858791391047208e-15}, {3.0036549212348937, 0.5974641111743921}};
-	static float pred[5][10];
+	float *x, *pred, *d_x, *d_pred;
 
-	float *d_x, *d_pred;
+	static float x[10][2] = {{1.8188397769118172, 1.2153098847303805}, {6.0, 3.6739403974420594e-16}, {-0.9375247682205794, 1.4031049707605447}, {1.2858791391047208e-15, -3.5}, {1.6742400165972686, 4.041972954736879}, {-1.23743686707646, 1.2374368670764564}, {4.001447509206, -2.673681746406834}, {-5.946010762444584, -1.1827350772227778}, {-3.0, -1.2858791391047208e-15}, {3.0036549212348937, 0.5974641111743921}};
+
+	if (argc > 1)
+	{
+		read_data(argv[1], (float *)pred, 5 * 10)
+	}
+
+	x = (float*)malloc(10 * 2 * sizeof(float));
+	pred = (float*)malloc(5 * 10 * sizeof(float));
 
 	cudaMalloc(&d_x, 10 * 2 * sizeof(float));
 	cudaMalloc(&d_pred, 5 * 10 * sizeof(float));
@@ -2033,9 +2047,9 @@ int main(int argc, char *argv[])
 	cudaFree(d_x);
 	cudaFree(d_pred);
 
-	if (argc > 1)
+	if (argc > 2)
 	{
-		write_data(argv[1], (float *)pred, 5 * 10);
+		write_data(argv[2], (float *)pred, 5 * 10);
 	}
 
 	return 0;
