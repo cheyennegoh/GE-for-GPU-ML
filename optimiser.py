@@ -10,7 +10,7 @@ from skopt.space import Real, Integer, Categorical
 from pathlib import Path
 from datetime import datetime
 import json
-
+import argparse
 
 class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
     def __init__(self, problem='spiral', compiler='gcc', n_registers=2, 
@@ -76,25 +76,46 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
 
 
 def main():
-    problem = 'spiral'
+    categorical = ['n_registers', 'pop_size']
+    real = ['cxpb', 'mutpb']
+    integer = ['elite_size', 'hof_size', 'tournsize', 'max_init_depth', 'min_init_depth','max_tree_depth']
+
+    all_spaces = categorical + real + integer
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--spaces", nargs='+', default=all_spaces)
+    parser.add_argument("--problem", default='drive')
+    parser.add_argument("--compiler", default='gcc')
+    parser.add_argument("--n_registers", type=int, nargs='+', default=[2, 4, 6])
+    parser.add_argument("--pop_size", type=int, nargs='+', default=[10, 100, 1000])
+    parser.add_argument("--cxpb", type=float, nargs=2, default=[0.7, 0.9])
+    parser.add_argument("--mutpb", type=float, nargs=2, default=[0.1, 0.3])
+    parser.add_argument("--elite_size", type=int, nargs=2, default=[4, 6]) # min must be >= 0
+    parser.add_argument("--hof_size", type=int, nargs=2, default=[5, 7]) # min must be >= 1
+    parser.add_argument("--tournsize", type=int, nargs=2, default=[2, 4])
+    parser.add_argument("--max_init_depth", type=int, nargs=2, default=[12, 14])  # max must be <= 14
+    parser.add_argument("--min_init_depth", type=int, nargs=2, default=[6, 8]) # min must be >= 5
+    parser.add_argument("--max_tree_depth", type=int, nargs=2, default=[25, 75])
+    parser.add_argument("--n_samples", type=int)
+
+    kwargs = dict(parser.parse_args()._get_kwargs())
+
+    search_spaces = {}
+    for space in kwargs['spaces']:
+        if space in categorical:
+            search_spaces[space] = Categorical(kwargs[space], transform='identity')
+        elif space in real:
+            search_spaces[space] = Real(*kwargs[space], prior='log-uniform')
+        elif space in integer:
+            search_spaces[space] = Integer(*kwargs[space])
     
-    X, y = ge.set_dataset(problem)
+    X, y = ge.set_dataset(kwargs['problem'], n_samples=kwargs['n_samples'])
 
     optGE = BayesSearchCV(
-        estimator=GrammaticalEvolution(problem=problem,
-                                       compiler='gcc'),
-        search_spaces={
-            'n_registers': Categorical([2, 4], transform='identity'),
-            'pop_size': Categorical([100, 1000], transform='identity'),
-            'cxpb': Real(0.7, 0.9, prior='log-uniform'),
-            'mutpb': Real(0.1, 0.3, prior='log-uniform'),
-            'elite_size': Integer(4, 6), # min must be >= 0
-            'hof_size': Integer(5, 7), # min must be >= 1
-            'tournsize': Integer(2, 4),
-            'max_init_depth': Integer(12, 14), # max must be <= 14
-            'min_init_depth': Integer(6, 8), # min must be >= 5
-            'max_tree_depth': Categorical([50, 75, 100], transform='identity')
-        },
+        estimator=GrammaticalEvolution(problem=kwargs['problem'],
+                                       compiler=kwargs['compiler']),
+        search_spaces=search_spaces,
         n_iter=40,
         cv=5,
         verbose=10
@@ -109,6 +130,7 @@ def main():
 
     Path(r"./optimisation/").mkdir(parents=True, exist_ok=True)
 
+    # TODO: custom path for optimisation results
     timestamp = datetime.now().replace(microsecond=0).isoformat().replace(':', '')
     with open(r"./optimisation/" + timestamp + ".json", "w") as jsonfile:
         json.dump(results, jsonfile, indent=4)
