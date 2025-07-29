@@ -5,7 +5,10 @@ import subprocess
 import tempfile
 import struct
 import numpy as np
+
+# DEBUG
 import time
+import sys
 
 def generate_code_gcc(x, expressions, n_registers):
     include = ('#include <math.h>\n'
