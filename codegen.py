@@ -45,7 +45,7 @@ def generate_code_gcc(x, expressions, n_registers):
     
     pred = ''
     for i in range(len(expressions)):
-        pred += f'\t\tpred[{x.shape[0]} * {i} + i] = evaluate{i}(&x[{len(expressions)} * i]);\n'
+        pred += f'\t\tpred[{x.shape[0]} * {i} + i] = evaluate{i}(&x[{x.shape[1]} * i]);\n'
 
     main = (f'int main(int argc, char *argv[])\n'
             '{\n'
