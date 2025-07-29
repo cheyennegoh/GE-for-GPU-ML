@@ -13,6 +13,7 @@ from deap import creator, base, tools
 # DEBUG
 import sys
 
+import argparse
 from pathlib import Path
 
 import numpy as np
@@ -94,8 +95,16 @@ def fitness_eval(population, points, train=True):
         
         expressions.append(evaluate_expression(individual.phenotype))
 
-    # TODO: Check that NVCC implementation works correctly
     pred = codegen.run_program(x, expressions, compiler, n_registers)
+
+    # pred_gcc = codegen.run_program(x, expressions, "gcc", n_registers)
+    # pred_nvcc = codegen.run_program(x, expressions, "nvcc", n_registers)
+    # delta = abs(pred_gcc - pred_nvcc)
+    # print(f'min: {np.min(delta)}')
+    # print(f'max: {np.max(delta)}')
+    # print(f'mean: {np.mean(delta)}')
+    # print(f'median: {np.median(delta)}')
+    # sys.exit(0)
 
     fitnesses = []
     i = 0
@@ -155,7 +164,7 @@ def display_best(hof):
     print("Length of the genome: ", len(hof.items[0].genome))
     print(f"Used portion of the genome: {hof.items[0].used_codons/len(hof.items[0].genome):.2f}\n")
 
-
+# TODO
 def record_results(run, report_items, ngen, logbook):
     Path(r"./results/").mkdir(parents=True, exist_ok=True)
 
@@ -222,6 +231,7 @@ def run_algorithm(X_train, Y_train, problem, compiler, n_registers, pop_size,
     display_best(hof)
 
     if export_results:
+        # TODO
         record_results(run, report_items, ngen, logbook)
 
     return hof.items[0]
@@ -245,19 +255,11 @@ def multiple_runs(X_train, Y_train, problem, compiler, n_registers, pop_size,
 
 
 def main():
-
-    # path = None
-    
-    # with open(path) as jsonfile:
-    #     json_data = json.load(jsonfile)
-    
-    # params = json_data['params']
-
     params = {
-        "problem": "spiral",
+        "problem": "drive",
         "compiler": "gcc",
         "n_registers": 2,
-        "pop_size": 5,
+        "pop_size": 100,
         "ngen": 10,
         "cxpb": 0.8109132739939237,
         "mutpb": 0.06233993054636417,
@@ -269,10 +271,40 @@ def main():
         "max_tree_depth": 26
     }
     
-    X, y = set_dataset(params['problem'])
+    parser = argparse.ArgumentParser()
 
-    multiple_runs(X, y, **params, n_runs=1)
+    parser.add_argument("--path")
+    parser.add_argument("--problem")
+    parser.add_argument("--compiler")
+    parser.add_argument("--n_registers", type=int)
+    parser.add_argument("--pop_size", type=int)
+    parser.add_argument("--ngen", type=int)
+    parser.add_argument("--cxpb", type=float)
+    parser.add_argument("--mutpb", type=float)
+    parser.add_argument("--elite_size", type=int)
+    parser.add_argument("--hof_size", type=int)
+    parser.add_argument("--tournsize", type=int)
+    parser.add_argument("--max_init_depth", type=int)
+    parser.add_argument("--min_init_depth", type=int)
+    parser.add_argument("--max_tree_depth", type=int)
+    parser.add_argument("--n_samples", type=int)
 
+    kwargs = dict(parser.parse_args()._get_kwargs())
+
+    if kwargs['path']:
+        with open(kwargs['path']) as jsonfile:
+            json_data = json.load(jsonfile)
+            params = json_data['params']
+    
+    for key in params.keys():
+        if kwargs[key]:
+            params[key] = kwargs[key]
+    
+    X, y = set_dataset(params['problem'], n_samples=kwargs['n_samples'])
+
+    multiple_runs(X, y, **params)
+
+    # TODO: Make result path a parameter
     with open(r"./results/" + "params.json", "w") as jsonfile:
         json.dump({'params': params}, jsonfile, indent=4)
 
