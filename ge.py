@@ -13,8 +13,9 @@ from deap import creator, base, tools
 # DEBUG
 import sys
 
+import os
 import argparse
-from pathlib import Path
+from datetime import datetime
 
 import numpy as np
 import random
@@ -59,8 +60,8 @@ def set_dataset(problem, random_seed=42, test_size=0, n_samples=None):
 
 
 def set_grammar(problem, compiler, n_registers):
-    basename = '_'.join((problem, compiler, str(n_registers))) + '.bnf'
-    return grape.Grammar('./grammars/' + basename)
+    stem = '_'.join((problem, compiler, str(n_registers)))
+    return grape.Grammar(os.path.join('grammars', f'{stem}.bnf'))
 
 
 def mae(y, yhat):
@@ -164,11 +165,9 @@ def display_best(hof):
     print("Length of the genome: ", len(hof.items[0].genome))
     print(f"Used portion of the genome: {hof.items[0].used_codons/len(hof.items[0].genome):.2f}\n")
 
-# TODO
-def record_results(run, report_items, ngen, logbook):
-    Path(r"./results/").mkdir(parents=True, exist_ok=True)
 
-    with open(r"./results/" + str(run) + ".csv", "w", encoding='UTF8', newline='') as csvfile:
+def record_results(output_path, run, report_items, ngen, logbook):
+    with open(os.path.join(output_path, f'{run}.csv'), "w", encoding='UTF8', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter='\t')
         writer.writerow(report_items)
         
@@ -179,7 +178,7 @@ def record_results(run, report_items, ngen, logbook):
 def run_algorithm(X_train, Y_train, problem, compiler, n_registers, pop_size, 
                   ngen, cxpb, mutpb, elite_size, hof_size, tournsize, 
                   max_init_depth, min_init_depth, max_tree_depth, run=0, 
-                  export_results=False):
+                  output_path=None):
     
     bnf_grammar = set_grammar(problem, compiler, n_registers)
 
@@ -230,9 +229,8 @@ def run_algorithm(X_train, Y_train, problem, compiler, n_registers, pop_size,
     
     display_best(hof)
 
-    if export_results:
-        # TODO
-        record_results(run, report_items, ngen, logbook)
+    if output_path:
+        record_results(output_path, run, report_items, ngen, logbook)
 
     return hof.items[0]
 
@@ -240,7 +238,7 @@ def run_algorithm(X_train, Y_train, problem, compiler, n_registers, pop_size,
 def multiple_runs(X_train, Y_train, problem, compiler, n_registers, pop_size, 
                   ngen, cxpb, mutpb, elite_size, hof_size, tournsize, 
                   max_init_depth, min_init_depth, max_tree_depth, n_runs=30, 
-                  export_results=True):
+                  output_path=None):
     
     for run in range(n_runs):
         print(f"\nRun: {run}\n")
@@ -251,10 +249,12 @@ def multiple_runs(X_train, Y_train, problem, compiler, n_registers, pop_size,
         run_algorithm(X_train, Y_train, problem, compiler, n_registers, 
                       pop_size, ngen, cxpb, mutpb, elite_size, hof_size, 
                       tournsize, max_init_depth, min_init_depth, 
-                      max_tree_depth, run, export_results)
+                      max_tree_depth, run, output_path)
 
 
 def main():
+    timestamp = datetime.now().replace(microsecond=0).isoformat().replace(':', '')
+
     params = {
         "problem": "drive",
         "compiler": "gcc",
@@ -273,7 +273,8 @@ def main():
     
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--path")
+    parser.add_argument("-i", "--input")
+    parser.add_argument("-o", "--output", default=timestamp)
     parser.add_argument("--problem")
     parser.add_argument("--compiler")
     parser.add_argument("--n_registers", type=int)
@@ -291,8 +292,11 @@ def main():
 
     kwargs = dict(parser.parse_args()._get_kwargs())
 
-    if kwargs['path']:
-        with open(kwargs['path']) as jsonfile:
+    output_path = os.path.join('results', kwargs['output'])
+    os.makedirs(output_path, exist_ok=True)
+
+    if kwargs['input']:
+        with open(kwargs['input']) as jsonfile:
             json_data = json.load(jsonfile)
             params = json_data['params']
     
@@ -302,10 +306,9 @@ def main():
     
     X, y = set_dataset(params['problem'], n_samples=kwargs['n_samples'])
 
-    multiple_runs(X, y, **params)
+    multiple_runs(X, y, **params, output_path=output_path)
 
-    # TODO: Make result path a parameter
-    with open(r"./results/" + "params.json", "w") as jsonfile:
+    with open(os.path.join(output_path, "params.json"), "w") as jsonfile:
         json.dump({'params': params}, jsonfile, indent=4)
 
 

@@ -7,7 +7,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from skopt import BayesSearchCV
 from skopt.space import Real, Integer, Categorical
 
-from pathlib import Path
+import os
 from datetime import datetime
 import json
 import argparse
@@ -76,6 +76,8 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
 
 
 def main():
+    timestamp = datetime.now().replace(microsecond=0).isoformat().replace(':', '')
+
     categorical = ['n_registers', 'pop_size']
     real = ['cxpb', 'mutpb']
     integer = ['elite_size', 'hof_size', 'tournsize', 'max_init_depth', 'min_init_depth','max_tree_depth']
@@ -84,6 +86,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument("-o", "--output", default=f'{timestamp}.json')
     parser.add_argument("--spaces", nargs='+', default=all_spaces)
     parser.add_argument("--problem", default='drive')
     parser.add_argument("--compiler", default='gcc')
@@ -125,14 +128,13 @@ def main():
 
     results = {
         'val_acc': optGE.best_score_,
+        'search_spaces': {key : value.bounds for key, value in search_spaces.items()},
         'params': GrammaticalEvolution.constrain_params(vars(optGE.best_estimator_))
     }
 
-    Path(r"./optimisation/").mkdir(parents=True, exist_ok=True)
+    os.makedirs('optimisation', exist_ok=True)
 
-    # TODO: custom path for optimisation results
-    timestamp = datetime.now().replace(microsecond=0).isoformat().replace(':', '')
-    with open(r"./optimisation/" + timestamp + ".json", "w") as jsonfile:
+    with open(os.path.join('optimisation', kwargs['output']), "w") as jsonfile:
         json.dump(results, jsonfile, indent=4)
 
 

@@ -163,7 +163,7 @@ cython_debug/
 
 .DS_Store
 
-results*/
+results/
 optimisation/
 
 .vscode/
