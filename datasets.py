@@ -27,7 +27,7 @@ def spiral():
     return np.array(ds)
 
 
-def drive(window_size=3, greyscale=True):
+def drive(window_size=5, greyscale=True):
     handle = 'andrewmvd/drive-digital-retinal-images-for-vessel-extraction'
     drive_path = os.path.join(kagglehub.dataset_download(handle), 'DRIVE', 'training')
 
