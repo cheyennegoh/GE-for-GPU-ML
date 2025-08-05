@@ -13,9 +13,9 @@ import json
 import argparse
 
 class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
-    def __init__(self, problem='spiral', compiler='gcc', n_registers=2, 
-                 pop_size=1000, ngen=100, cxpb=0.8270227953815832, 
-                 mutpb=0.21718583795615884, elite_size=4, hof_size=6, 
+    def __init__(self, problem='drive', compiler='gcc', n_registers=4, 
+                 pop_size=10, ngen=10000, cxpb=0.7691135265776965, 
+                 mutpb=0.1, elite_size=4, hof_size=6, 
                  tournsize=3, max_init_depth=13, min_init_depth=7, 
                  max_tree_depth=25):
         
