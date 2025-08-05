@@ -119,8 +119,8 @@ def main():
         estimator=GrammaticalEvolution(problem=kwargs['problem'],
                                        compiler=kwargs['compiler']),
         search_spaces=search_spaces,
-        n_iter=40,
-        cv=5,
+        n_iter=30,
+        cv=3,
         verbose=10
     )
 
