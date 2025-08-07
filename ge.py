@@ -137,10 +137,10 @@ def create_stats():
 
 
 def display_best(hof):
-    print("\nBest individual:\n" + eval(hof.items[0].phenotype))
-    print("\nTraining fitness: ", hof.items[0].fitness.values[0])
-    print("Depth: ", hof.items[0].depth)
-    print("Length of the genome: ", len(hof.items[0].genome))
+    print("\nBest individual:\n" + eval(hof.items[0].phenotype) + "\n")
+    print("Training fitness:", hof.items[0].fitness.values[0])
+    print("Depth:", hof.items[0].depth)
+    print("Length of the genome:", len(hof.items[0].genome))
     print(f"Used portion of the genome: {hof.items[0].used_codons / len(hof.items[0].genome):.2f}\n")
 
 
