@@ -11,6 +11,20 @@ from sklearn.model_selection import train_test_split
 from imblearn.under_sampling import RandomUnderSampler
 
 def spiral(n_samples=None, test_size=0.2, random_seed=42):
+    X, y = spiral_generate()
+
+    X_train, X_test, y_train, y_test = train_test_split(X, 
+                                                        y, 
+                                                        test_size=test_size, 
+                                                        random_state=random_seed,
+                                                        stratify=y)
+
+    X_train, y_train = shuffle(X_train, y_train, random_state=random_seed, n_samples=n_samples)
+
+    return X_train, X_test, y_train, y_test
+
+
+def spiral_generate():
     '''
         Generates training data for a network with 2 inputs and 1 output.
 
@@ -33,15 +47,7 @@ def spiral(n_samples=None, test_size=0.2, random_seed=42):
     X = data[:,:-1]
     y = data[:,-1]
 
-    X_train, X_test, y_train, y_test = train_test_split(X, 
-                                                        y, 
-                                                        test_size=test_size, 
-                                                        random_state=random_seed,
-                                                        stratify=y)
-
-    X_train, y_train = shuffle(X_train, y_train, random_state=random_seed, n_samples=n_samples)
-
-    return X_train, X_test, y_train, y_test
+    return X, y
 
 
 def drive(n_samples=None, test_size=0.2, random_seed=42):
@@ -117,6 +123,18 @@ def drive_sample_test_image(test_size=0.2, random_seed=42):
     
     image, manual, mask = drive_load_image(drive_path, image_id)
 
-    X, y = drive_preprocessing([image_id])
+    X_sample, _ = drive_preprocessing([image_id])
 
-    return image, manual, mask, (X, y)
+    return image, manual, mask, X_sample
+
+
+def drive_annotate_sample_test_image(mask, y_sample):
+    annotation = mask.copy()
+    y_sample_iter = iter(y_sample)
+
+    for i in range(annotation.shape[0]):
+        for j in range(annotation.shape[1]):
+            if annotation[i, j]:
+                annotation[i, j] = 255 * next(y_sample_iter)
+    
+    return annotation
