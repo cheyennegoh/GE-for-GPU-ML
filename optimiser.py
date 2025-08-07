@@ -1,7 +1,6 @@
 # optimiser.py
 
 import ge
-import codegen
 
 from sklearn.base import BaseEstimator, ClassifierMixin
 from skopt import BayesSearchCV
@@ -44,11 +43,10 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
 
 
     def predict(self, X):
-        pred = codegen.run_program(X, 
-                                   [ge.evaluate_expression(self.best_individual.phenotype)],
-                                   self.compiler,
-                                   self.n_registers)[0]
-        return [0 if pred[i] < 0.5 else 1 for i in range(len(pred))]
+        return ge.predict(X, 
+                          ge.evaluate_expression(self.best_individual.phenotype),
+                          self.compiler,
+                          self.n_registers)
     
 
     def score(self, X, y):

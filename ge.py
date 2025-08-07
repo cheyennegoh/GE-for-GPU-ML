@@ -23,40 +23,18 @@ import random
 import csv
 import json
 
-from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
-from imblearn.under_sampling import RandomUnderSampler
-
 import warnings
 warnings.filterwarnings("ignore")
 
 
-def set_dataset(problem, random_seed=42, test_size=0, n_samples=None):
+def set_dataset(problem, n_samples=None):
     if problem == 'spiral':
-        data = datasets.spiral()
+        X_train, X_test, y_train, y_test = datasets.spiral(n_samples=n_samples)
         
     elif problem == 'drive':
-        data = datasets.drive()
+        X_train, X_test, y_train, y_test = datasets.drive(n_samples=n_samples)
 
-    X = data[:,:-1]
-    Y = data[:,-1]
-
-    if problem == 'drive':
-        X, Y = RandomUnderSampler(random_state=random_seed).fit_resample(X, Y)
-
-    X, Y = shuffle(X, Y, random_state=random_seed, n_samples=n_samples)
-
-    if test_size == 0:
-        return X, Y
-    
-    else:
-        X_train, X_test, Y_train, Y_test = train_test_split(X, 
-                                                            Y, 
-                                                            test_size=test_size, 
-                                                            random_state=random_seed,
-                                                            stratify=Y)
-
-        return X_train, Y_train, X_test, Y_test
+    return X_train, y_train, X_test, y_test
 
 
 def set_grammar(problem, compiler, n_registers):
@@ -87,7 +65,7 @@ def evaluate_expression(phenotype):
 
 
 def fitness_eval(population, points, train=True):
-    (x, Y), compiler, n_registers = points
+    (x, y), compiler, n_registers = points
 
     expressions = []
     for individual in population:
@@ -117,11 +95,11 @@ def fitness_eval(population, points, train=True):
             fitness = np.NaN
         else:
             try:
-                Y_class = [0 if pred[i][j] < 0.5 else 1 for j in range(len(Y))]
+                y_class = [0 if pred[i][j] < 0.5 else 1 for j in range(len(y))]
             except (IndexError, TypeError):
                 fitness = np.NaN
             
-            fitness = mae(Y, Y_class)
+            fitness = mae(y, y_class)
             i += 1
     
         if train:
@@ -160,10 +138,10 @@ def create_stats():
 
 def display_best(hof):
     print("\nBest individual:\n" + eval(hof.items[0].phenotype))
-    print("\nTraining Fitness: ", hof.items[0].fitness.values[0])
+    print("\nTraining fitness: ", hof.items[0].fitness.values[0])
     print("Depth: ", hof.items[0].depth)
     print("Length of the genome: ", len(hof.items[0].genome))
-    print(f"Used portion of the genome: {hof.items[0].used_codons/len(hof.items[0].genome):.2f}\n")
+    print(f"Used portion of the genome: {hof.items[0].used_codons / len(hof.items[0].genome):.2f}\n")
 
 
 def record_results(output_path, run, report_items, ngen, logbook):
@@ -175,7 +153,15 @@ def record_results(output_path, run, report_items, ngen, logbook):
             writer.writerow([logbook.select(item)[value] for item in report_items])
 
 
-def run_algorithm(X_train, Y_train, problem, compiler, n_registers, pop_size, 
+def save_best(output_path, run, hof):
+    best_ind = vars(hof.items[0])
+    best_ind['fitness'] = best_ind['fitness'].values[0]
+
+    with open(os.path.join(output_path, f'{run}.json'), "w") as jsonfile:
+        json.dump({'best_ind': best_ind}, jsonfile, indent=4)
+
+
+def run_algorithm(X_train, y_train, problem, compiler, n_registers, pop_size, 
                   ngen, cxpb, mutpb, elite_size, hof_size, tournsize, 
                   max_init_depth, min_init_depth, max_tree_depth, run=0, 
                   output_path=None):
@@ -217,7 +203,7 @@ def run_algorithm(X_train, Y_train, problem, compiler, n_registers, pop_size,
                                                             codon_size=codon_size,
                                                             max_tree_depth=max_tree_depth,
                                                             max_genome_length=None,
-                                                            points_train=([X_train, Y_train], 
+                                                            points_train=([X_train, y_train], 
                                                                           compiler, 
                                                                           n_registers),
                                                             codon_consumption=codon_consumption,
@@ -231,11 +217,12 @@ def run_algorithm(X_train, Y_train, problem, compiler, n_registers, pop_size,
 
     if output_path:
         record_results(output_path, run, report_items, ngen, logbook)
+        save_best(output_path, run, hof)
 
     return hof.items[0]
 
 
-def multiple_runs(X_train, Y_train, problem, compiler, n_registers, pop_size, 
+def multiple_runs(X_train, y_train, problem, compiler, n_registers, pop_size, 
                   ngen, cxpb, mutpb, elite_size, hof_size, tournsize, 
                   max_init_depth, min_init_depth, max_tree_depth, n_runs=30, 
                   output_path=None):
@@ -246,10 +233,15 @@ def multiple_runs(X_train, Y_train, problem, compiler, n_registers, pop_size,
         np.random.seed(run)
         random.seed(run)
 
-        run_algorithm(X_train, Y_train, problem, compiler, n_registers, 
+        run_algorithm(X_train, y_train, problem, compiler, n_registers, 
                       pop_size, ngen, cxpb, mutpb, elite_size, hof_size, 
                       tournsize, max_init_depth, min_init_depth, 
                       max_tree_depth, run, output_path)
+
+
+def predict(X, expression, compiler, n_registers):
+    pred = codegen.run_program(X, [expression], compiler, n_registers)[0]
+    return [0 if pred[i] < 0.5 else 1 for i in range(len(pred))]
 
 
 def main():
@@ -304,9 +296,9 @@ def main():
         if kwargs[key]:
             params[key] = kwargs[key]
     
-    X, y = set_dataset(params['problem'], n_samples=kwargs['n_samples'])
+    X_train, y_train, _, _ = set_dataset(params['problem'], n_samples=kwargs['n_samples'])
 
-    multiple_runs(X, y, **params, output_path=output_path)
+    multiple_runs(X_train, y_train, **params, output_path=output_path)
 
     with open(os.path.join(output_path, "params.json"), "w") as jsonfile:
         json.dump({'params': params}, jsonfile, indent=4)
