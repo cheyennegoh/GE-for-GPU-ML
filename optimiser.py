@@ -114,7 +114,7 @@ def main():
         elif space in integer:
             search_spaces[space] = Integer(*kwargs[space])
     
-    X, y = ge.set_dataset(kwargs['problem'], n_samples=kwargs['n_samples'])
+    X_train, y_train, _, _ = ge.set_dataset(kwargs['problem'], n_samples=kwargs['n_samples'])
 
     optGE = BayesSearchCV(
         estimator=GrammaticalEvolution(problem=kwargs['problem'],
@@ -125,7 +125,7 @@ def main():
         verbose=10
     )
 
-    optGE.fit(X, y)
+    optGE.fit(X_train, y_train)
 
     results = {
         'val_acc': optGE.best_score_,
