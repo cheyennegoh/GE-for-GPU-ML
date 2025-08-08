@@ -110,7 +110,7 @@ def drive_load_image(drive_path, image_id, greyscale=True):
     return image, manual, mask
 
 
-def drive_sample_test_image(test_size=0.2, random_seed=42):
+def drive_get_sample_image(test_size=0.2, random_seed=42):
     handle = 'andrewmvd/drive-digital-retinal-images-for-vessel-extraction'
     drive_path = os.path.join(kagglehub.dataset_download(handle), 'DRIVE', 'training')
 
@@ -128,7 +128,7 @@ def drive_sample_test_image(test_size=0.2, random_seed=42):
     return image, manual, mask, X_sample
 
 
-def drive_annotate_sample_test_image(mask, y_sample):
+def drive_annotate_sample_image(mask, y_sample):
     annotation = mask.copy()
     y_sample_iter = iter(y_sample)
 
