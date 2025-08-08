@@ -37,8 +37,8 @@ def set_dataset(problem, n_samples=None):
     return X_train, y_train, X_test, y_test
 
 
-def set_grammar(problem, compiler, n_registers):
-    stem = '_'.join((problem, compiler, str(n_registers)))
+def set_grammar(problem, n_registers):
+    stem = '_'.join((problem, str(n_registers)))
     return grape.Grammar(os.path.join('grammars', f'{stem}.bnf'))
 
 
@@ -166,7 +166,7 @@ def run_algorithm(X_train, y_train, problem, compiler, n_registers, pop_size,
                   max_init_depth, min_init_depth, max_tree_depth, run=0, 
                   output_path=None):
     
-    bnf_grammar = set_grammar(problem, compiler, n_registers)
+    bnf_grammar = set_grammar(problem, n_registers)
 
     codon_size = 255
     codon_consumption = 'lazy'
@@ -250,7 +250,7 @@ def main():
     params = {
         "problem": "drive",
         "compiler": "gcc",
-        "n_registers": 2,
+        "n_registers": 6,
         "pop_size": 100,
         "ngen": 10,
         "cxpb": 0.8109132739939237,

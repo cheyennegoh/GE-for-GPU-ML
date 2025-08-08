@@ -65,7 +65,7 @@ def drive(n_samples=None, test_size=0.2, random_seed=42):
     return X_train, X_test, y_train, y_test
 
 
-def drive_preprocessing(image_ids, window_size=5):
+def drive_preprocessing(image_ids, window_size=7):
     handle = 'andrewmvd/drive-digital-retinal-images-for-vessel-extraction'
     drive_path = os.path.join(kagglehub.dataset_download(handle), 'DRIVE', 'training')
 
