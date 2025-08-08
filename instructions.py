@@ -1,4 +1,4 @@
-# fp32.py
+# instructions.py
 
 def add(dest, src):
     return f"{dest} += {src};"

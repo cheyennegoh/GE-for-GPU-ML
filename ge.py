@@ -3,7 +3,7 @@
 import datasets
 import codegen
 
-from instructions.fp32 import add, sub, mul, pdiv, aq, swap, sin, cos, tanh, if_gt
+from instructions import add, sub, mul, pdiv, aq, swap, sin, cos, tanh, if_gt
 
 import grape.grape as grape
 import grape.algorithms as algorithms
