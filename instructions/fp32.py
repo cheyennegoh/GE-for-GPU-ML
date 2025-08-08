@@ -12,14 +12,11 @@ def mul(dest, src):
 def pdiv(dest, src):
     return f"{dest} = ({src} != 0) ? {dest} / {src} : {dest} + 10e6;"
 
+def aq(dest, src):
+    return f"{dest} = {dest} / sqrt(1 + pow({src}, 2));"
+
 def swap(a, b, temp):
     return f"{temp} = {a}; {a} = {b}; {b} = {temp};"
-
-def abs(n):
-    return f"{n} = abs({n});"
-
-def psqrt(x):
-    return f"{x} = sqrt(abs({x}));"
 
 def sin(x):
     return f"{x} = sinf({x});"
@@ -27,8 +24,8 @@ def sin(x):
 def cos(x):
     return f"{x} = cosf({x});"
 
+def tanh(x):
+    return f"{x} = tanhf({x});"
+
 def if_gt(a, b):
     return f"if ({a} > {b})"
-
-def if_lt(a, b):
-    return f"if ({a} < {b})"

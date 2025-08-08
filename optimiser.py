@@ -45,13 +45,16 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
     def predict(self, X):
         return ge.predict(X, 
                           ge.evaluate_expression(self.best_individual.phenotype),
+                          self.problem,
                           self.compiler,
                           self.n_registers)
     
 
     def score(self, X, y):
         return 1 - ge.fitness_eval([self.best_individual], 
-                                   ([X, y], self.compiler, self.n_registers), 
+                                   ([X, y], 
+                                    self.compiler, 
+                                    self.n_registers + 1 if self.problem == 'drive' else self.n_registers), 
                                    False)[0]
 
 
@@ -88,15 +91,15 @@ def main():
     parser.add_argument("--spaces", nargs='+', default=all_spaces)
     parser.add_argument("--problem", default='drive')
     parser.add_argument("--compiler", default='gcc')
-    parser.add_argument("--n_registers", type=int, nargs='+', default=[2, 4, 6])
+    parser.add_argument("--n_registers", type=int, nargs='+', default=[6, 8, 10])
     parser.add_argument("--pop_size", type=int, nargs='+', default=[10, 100, 1000])
     parser.add_argument("--cxpb", type=float, nargs=2, default=[0.7, 0.9])
     parser.add_argument("--mutpb", type=float, nargs=2, default=[0.1, 0.3])
     parser.add_argument("--elite_size", type=int, nargs=2, default=[4, 6]) # min must be >= 0
     parser.add_argument("--hof_size", type=int, nargs=2, default=[5, 7]) # min must be >= 1
     parser.add_argument("--tournsize", type=int, nargs=2, default=[2, 4])
-    parser.add_argument("--max_init_depth", type=int, nargs=2, default=[12, 14])  # max must be <= 14
-    parser.add_argument("--min_init_depth", type=int, nargs=2, default=[6, 8]) # min must be >= 5
+    parser.add_argument("--max_init_depth", type=int, nargs=2, default=[12, 15])
+    parser.add_argument("--min_init_depth", type=int, nargs=2, default=[6, 8]) # min must be >= 4
     parser.add_argument("--max_tree_depth", type=int, nargs=2, default=[25, 75])
     parser.add_argument("--n_samples", type=int)
 

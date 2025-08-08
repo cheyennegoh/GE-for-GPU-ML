@@ -3,7 +3,7 @@
 import datasets
 import codegen
 
-from instructions.fp32 import add, sub, mul, pdiv, sin, cos, if_gt
+from instructions.fp32 import add, sub, mul, pdiv, aq, swap, sin, cos, tanh, if_gt
 
 import grape.grape as grape
 import grape.algorithms as algorithms
@@ -167,7 +167,9 @@ def run_algorithm(X_train, y_train, problem, compiler, n_registers, pop_size,
                   output_path=None):
     
     bnf_grammar = set_grammar(problem, n_registers)
-
+    if problem == 'drive':
+        n_registers += 1
+    
     codon_size = 255
     codon_consumption = 'lazy'
     genome_representation = 'list'
@@ -239,7 +241,10 @@ def multiple_runs(X_train, y_train, problem, compiler, n_registers, pop_size,
                       max_tree_depth, run, output_path)
 
 
-def predict(X, expression, compiler, n_registers):
+def predict(X, expression, problem, compiler, n_registers):
+    if problem == 'drive':
+        n_registers += 1
+    
     pred = codegen.run_program(X, [expression], compiler, n_registers)[0]
     return [0 if pred[i] < 0.5 else 1 for i in range(len(pred))]
 
@@ -298,10 +303,10 @@ def main():
     
     X_train, y_train, _, _ = set_dataset(params['problem'], n_samples=kwargs['n_samples'])
 
-    multiple_runs(X_train, y_train, **params, output_path=output_path)
-
     with open(os.path.join(output_path, "params.json"), "w") as jsonfile:
         json.dump({'params': params}, jsonfile, indent=4)
+
+    multiple_runs(X_train, y_train, **params, output_path=output_path)
 
 
 if __name__ == "__main__":

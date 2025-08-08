@@ -2,9 +2,7 @@
           | if_gt("<arg>", "<arg>") + "\n" + <op>
           | <block> + "\n" + <block>
 
-<op>    ::= <fp32>
-
-<fp32>  ::= <num>("r[0]", "<arg>")
+<op>    ::= <num>("r[0]", "<arg>")
           | <num>("<ri>", "r[0]")
           | <fun>("r[0]")
 

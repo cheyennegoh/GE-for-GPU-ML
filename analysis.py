@@ -85,7 +85,9 @@ def plot_genome_length(results, output_path):
 
 
 def plot_confusion_matrix(y_true, y_pred, output_path):
-    ConfusionMatrixDisplay.from_predictions(y_true, y_pred, cmap='Blues')
+    ConfusionMatrixDisplay.from_predictions(y_true, y_pred, labels=[0, 1], values_format=',d',cmap='Blues')
+    cb = plt.gca().images[-1].colorbar
+    cb.ax.set_yticklabels([f"{tick:,.0f}" for tick in cb.get_ticks()])
     plt.title('Confusion Matrix')
     plt.savefig(os.path.join(output_path, 'confusion_matrix.png'), dpi=300)
     plt.clf()
@@ -115,7 +117,7 @@ def visualise_spiral(expression, params, output_path):
 
 def visualise_drive(expression, params, output_path):
     image, manual, mask, X_sample = datasets.drive_get_sample_image()
-    y_sample_class = ge.predict(X_sample, expression, params['compiler'], params['n_registers'])
+    y_sample_class = ge.predict(X_sample, expression, params['problem'], params['compiler'], params['n_registers'])
     annotation = datasets.drive_annotate_sample_image(mask, y_sample_class)
 
     Image.fromarray(image).save(os.path.join(output_path, 'sample_image.gif'))
@@ -147,7 +149,7 @@ def main():
     accuracies = []
 
     for expression in best_expressions:
-        y_class = ge.predict(X_test, expression, params['compiler'], params['n_registers'])
+        y_class = ge.predict(X_test, expression, params['problem'], params['compiler'], params['n_registers'])
 
         accuracies.append(accuracy_score(y_test, y_class))
         predictions.append(y_class)
