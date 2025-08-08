@@ -92,10 +92,12 @@ def drive_preprocessing(image_ids, window_size=5):
     return X, y
 
 
-def drive_load_image(drive_path, image_id, greyscale=True):
+def drive_load_image(drive_path, image_id, channel='G', greyscale=False):
     image_path = os.path.join(drive_path, 'images', f'{image_id}_training.tif')
     with Image.open(image_path) as im:
-        if greyscale:
+        if channel:
+            im = im.getchannel(channel)
+        elif greyscale:
             im = im.convert('L')
         image = np.array(im)
 
