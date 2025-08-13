@@ -255,17 +255,17 @@ def main():
     params = {
         "problem": "drive",
         "compiler": "gcc",
-        "n_registers": 6,
+        "n_registers": 8,
         "pop_size": 100,
-        "ngen": 10,
-        "cxpb": 0.8109132739939237,
-        "mutpb": 0.06233993054636417,
-        "elite_size": 3,
-        "hof_size": 3,
+        "ngen": 1000,
+        "cxpb": 0.6,
+        "mutpb": 0.030339818402497533,
+        "elite_size": 5,
+        "hof_size": 7,
         "tournsize": 3,
-        "max_init_depth": 13,
+        "max_init_depth": 12,
         "min_init_depth": 7,
-        "max_tree_depth": 26
+        "max_tree_depth": 69
     }
     
     parser = argparse.ArgumentParser()
