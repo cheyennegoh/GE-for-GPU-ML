@@ -19,7 +19,7 @@ import json
 import datetime
 from tqdm import tqdm
 
-from sklearn.metrics import accuracy_score, classification_report, ConfusionMatrixDisplay
+from sklearn.metrics import accuracy_score, f1_score, classification_report, ConfusionMatrixDisplay
 
 def read_csv_results(directory):
     roots = [os.path.splitext(f)[0] for f in os.listdir(directory) if f.endswith(".csv")]
@@ -154,25 +154,30 @@ def main():
 
     predictions = []
     accuracies = []
+    f1_scores = []
 
     for expression in tqdm(best_expressions):
         y_class = ge.predict(X_test, expression, params['problem'], params['compiler'], params['n_registers'])
-
-        accuracies.append(accuracy_score(y_test, y_class))
+        
         predictions.append(y_class)
+        accuracies.append(accuracy_score(y_test, y_class))
+        f1_scores.append(f1_score(y_test, y_class))
 
     mean_train_fitness = np.mean(best_train_fitnesses)
     std_train_fitness = np.std(best_train_fitnesses)
     mean_test_accuracy = np.mean(accuracies)
     std_test_accuracy = np.std(accuracies)
+    mean_test_f1_score = np.mean(f1_scores)
+    std_test_f1_score = np.std(f1_scores)
     mean_execution_time = np.mean(execution_times)
 
     print(f"Average results over {len(csv_results)} runs after {len(csv_results[0]) - 1} generations.")
     print(f"Training fitness: {mean_train_fitness:.4f} (standard deviation: {std_train_fitness:.4f})")
     print(f"Test accuracy: {mean_test_accuracy:.4f} (standard deviation: {std_test_accuracy:.4f})")
+    print(f"Test f1-score: {mean_test_f1_score:.4f} (standard deviation: {std_test_f1_score:.4f})")
     print(f"Execution time: {datetime.timedelta(seconds=mean_execution_time)}\n")
 
-    best_run = np.argmax(accuracies)
+    best_run = np.argmax(f1_scores)
     best_run_expression = best_expressions[best_run]
     best_run_prediction = predictions[best_run]
     best_run_individual = best_inds[best_run]
