@@ -15,6 +15,7 @@ import sys
 
 import os
 import argparse
+import time
 from datetime import datetime
 
 import numpy as np
@@ -153,12 +154,13 @@ def record_results(output_path, run, report_items, ngen, logbook):
             writer.writerow([logbook.select(item)[value] for item in report_items])
 
 
-def save_best(output_path, run, hof):
+def save_run_info(output_path, run, hof, duration):
     best_ind = vars(hof.items[0])
     best_ind['fitness'] = best_ind['fitness'].values[0]
 
     with open(os.path.join(output_path, f'{run}.json'), "w") as jsonfile:
-        json.dump({'best_ind': best_ind}, jsonfile, indent=4)
+        json.dump({'best_ind': best_ind,
+                   'execution_time': duration}, jsonfile, indent=4)
 
 
 def run_algorithm(X_train, y_train, problem, compiler, n_registers, pop_size, 
@@ -180,6 +182,8 @@ def run_algorithm(X_train, y_train, problem, compiler, n_registers, pop_size,
                     'avg_used_codons', 'best_ind_used_codons', 
                     'structural_diversity', 'selection_time', 
                     'generation_time']
+    
+    start_time = time.time()
 
     toolbox = create_toolbox(tournsize=tournsize)
 
@@ -215,11 +219,13 @@ def run_algorithm(X_train, y_train, problem, compiler, n_registers, pop_size,
                                                             halloffame=hof,
                                                             verbose=False)
     
+    duration = time.time() - start_time
+
     display_best(hof)
 
     if output_path:
         record_results(output_path, run, report_items, ngen, logbook)
-        save_best(output_path, run, hof)
+        save_run_info(output_path, run, hof, duration)
 
     return hof.items[0]
 

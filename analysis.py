@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 
 import json
+import datetime
+from tqdm import tqdm
 
 from sklearn.metrics import accuracy_score, classification_report, ConfusionMatrixDisplay
 
@@ -29,13 +31,16 @@ def read_json_results(directory):
     roots = [os.path.splitext(f)[0] for f in os.listdir(directory) if f.endswith(".json") and not f == 'params.json']
     roots.sort(key=int)
     
-    results = []
+    best_inds = []
+    execution_times = []
+
     for r in roots:
         with open(os.path.join(directory, f'{r}.json')) as jsonfile:
             json_data = json.load(jsonfile)
-            results.append(json_data['best_ind'])
+            best_inds.append(json_data['best_ind'])
+            execution_times.append(json_data['execution_time'])
     
-    return results
+    return best_inds, execution_times
 
 
 def plot_fitness(results, output_path):
@@ -141,14 +146,16 @@ def main():
     json_results = read_json_results(kwargs['input'])
 
     best_train_fitnesses = [r['min'].min() for r in csv_results]
-    best_expressions = [ge.evaluate_expression(r['phenotype']) for r in json_results]
+
+    best_inds, execution_times = json_results
+    best_expressions = [ge.evaluate_expression(r['phenotype']) for r in best_inds]
     
     _, _, X_test, y_test = ge.set_dataset(params['problem'])
 
     predictions = []
     accuracies = []
 
-    for expression in best_expressions:
+    for expression in tqdm(best_expressions):
         y_class = ge.predict(X_test, expression, params['problem'], params['compiler'], params['n_registers'])
 
         accuracies.append(accuracy_score(y_test, y_class))
@@ -158,15 +165,17 @@ def main():
     std_train_fitness = np.std(best_train_fitnesses)
     mean_test_accuracy = np.mean(accuracies)
     std_test_accuracy = np.std(accuracies)
+    mean_execution_time = np.mean(execution_times)
 
     print(f"Average results over {len(csv_results)} runs after {len(csv_results[0]) - 1} generations.")
     print(f"Training fitness: {mean_train_fitness:.4f} (standard deviation: {std_train_fitness:.4f})")
-    print(f"Test accuracy: {mean_test_accuracy:.4f} (standard deviation: {std_test_accuracy:.4f})\n")
-    
+    print(f"Test accuracy: {mean_test_accuracy:.4f} (standard deviation: {std_test_accuracy:.4f})")
+    print(f"Execution time: {datetime.timedelta(seconds=mean_execution_time)}\n")
+
     best_run = np.argmax(accuracies)
     best_run_expression = best_expressions[best_run]
     best_run_prediction = predictions[best_run]
-    best_run_individual = json_results[best_run]
+    best_run_individual = best_inds[best_run]
 
     print("Best individual:\n" + best_run_expression + "\n")
     print("Training fitness:", best_run_individual['fitness'])
