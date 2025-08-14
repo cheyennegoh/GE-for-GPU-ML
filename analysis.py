@@ -177,7 +177,11 @@ def main():
     print(f"Test f1-score: {mean_test_f1_score:.4f} (standard deviation: {std_test_f1_score:.4f})")
     print(f"Execution time: {datetime.timedelta(seconds=mean_execution_time)}\n")
 
-    best_run = np.argmax(f1_scores)
+    if params['problem'] == 'spiral':
+        best_run = np.argmax(accuracies)
+    elif params['problem'] == 'drive':
+        best_run = np.argmax(f1_scores)
+
     best_run_expression = best_expressions[best_run]
     best_run_prediction = predictions[best_run]
     best_run_individual = best_inds[best_run]
