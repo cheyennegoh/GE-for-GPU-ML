@@ -1,0 +1,17 @@
+{
+    "params": {
+        "problem": "drive",
+        "compiler": "nvcc",
+        "n_registers": 8,
+        "pop_size": 100,
+        "ngen": 1000,
+        "cxpb": 0.6,
+        "mutpb": 0.030339818402497533,
+        "elite_size": 5,
+        "hof_size": 7,
+        "tournsize": 3,
+        "max_init_depth": 12,
+        "min_init_depth": 7,
+        "max_tree_depth": 69
+    }
+}

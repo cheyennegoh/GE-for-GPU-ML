@@ -1,0 +1,28 @@
+Average results over 30 runs after 1000 generations.
+Training fitness: 0.3815 (standard deviation: 0.0435)
+Test accuracy: 0.5051 (standard deviation: 0.0636)
+Test f1-score: 0.5169 (standard deviation: 0.1068)
+Execution time: 0:01:54.170481
+
+Best individual:
+if (5 > x[1])
+r[0] = (6 != 0) ? r[0] / 6 : r[0] + 10e6;
+if (9 > x[1])
+r[0] = sinf(r[0]);
+if (x[1] > x[0])
+r[0] += 1;
+
+Training fitness: 0.41290322580645167
+Depth: 7
+Length of the genome: 2797
+Used portion of the genome: 0.0097
+
+              precision    recall  f1-score   support
+
+         0.0     0.6500    0.6500    0.6500        20
+         1.0     0.6316    0.6316    0.6316        19
+
+    accuracy                         0.6410        39
+   macro avg     0.6408    0.6408    0.6408        39
+weighted avg     0.6410    0.6410    0.6410        39
+

@@ -43,7 +43,7 @@ def read_json_results(directory):
     return best_inds, execution_times
 
 
-def plot_fitness(results, output_path):
+def plot_fitness(results, params, output_path):
     """Plots fitness statistics.
 
     Args:
@@ -57,17 +57,27 @@ def plot_fitness(results, output_path):
     std_fitness_values = results['std']
     min_fitness_values = results['min']
 
+    if params['problem'] == 'spiral':
+        dataset = 'Intertwined Spirals'
+    elif params['problem'] == 'drive':
+        dataset = 'DRIVE'
+
+    if params['compiler'] == 'gcc':
+        hardware = 'CPU'
+    elif params['compiler'] == 'nvcc':
+        hardware = 'GPU'
+
     plt.errorbar(gen, mean_fitness_values, yerr=std_fitness_values, color=colors[3], label="Average")
     plt.plot(min_fitness_values, color=colors[5], label='Best individual')
     plt.legend()
     plt.xlabel('Generation')
     plt.ylabel('Fitness')
-    plt.title('Fitness over Generations')
+    plt.title(f'Fitness over Generations - {dataset} ({hardware})')
     plt.savefig(os.path.join(output_path, 'fitness.png'), dpi=300)
     plt.clf()
 
 
-def plot_genome_length(results, output_path):
+def plot_genome_length(results, params, output_path):
     """Plots genome length statistics.
 
     Args:
@@ -79,39 +89,65 @@ def plot_genome_length(results, output_path):
     best_ind_length = results['best_ind_length']
     avg_length = results['avg_length']
 
+    if params['problem'] == 'spiral':
+        dataset = 'Intertwined Spirals'
+    elif params['problem'] == 'drive':
+        dataset = 'DRIVE'
+
+    if params['compiler'] == 'gcc':
+        hardware = 'CPU'
+    elif params['compiler'] == 'nvcc':
+        hardware = 'GPU'
+
     plt.plot(avg_length, color=colors[1], label="Average")
     plt.plot(best_ind_length, color=colors[3], label="Best individual")
     plt.legend()
     plt.xlabel('Generation')
     plt.ylabel('Genome Length')
-    plt.title('Genome Length over Generations')
+    plt.title(f'Genome Length over Generations - {dataset} ({hardware})')
     plt.savefig(os.path.join(output_path, 'genome_length.png'), dpi=300)
     plt.clf()
 
 
-def plot_confusion_matrix(y_true, y_pred, output_path):
+def plot_confusion_matrix(y_true, y_pred, params, output_path):
+
+    if params['problem'] == 'spiral':
+        dataset = 'Intertwined Spirals'
+    elif params['problem'] == 'drive':
+        dataset = 'DRIVE'
+
+    if params['compiler'] == 'gcc':
+        hardware = 'CPU'
+    elif params['compiler'] == 'nvcc':
+        hardware = 'GPU'
+
     ConfusionMatrixDisplay.from_predictions(y_true, y_pred, labels=[0, 1], values_format=',d',cmap='Blues')
     cb = plt.gca().images[-1].colorbar
     cb.ax.set_yticklabels([f"{tick:,.0f}" for tick in cb.get_ticks()])
-    plt.title('Confusion Matrix')
+    plt.title(f'Confusion Matrix - {dataset} ({hardware})')
     plt.savefig(os.path.join(output_path, 'confusion_matrix.png'), dpi=300)
     plt.clf()
 
 
 def visualise_spiral(expression, params, output_path):
+    if params['compiler'] == 'gcc':
+        hardware = 'CPU'
+    elif params['compiler'] == 'nvcc':
+        hardware = 'GPU'
+
     colors = mpl.colormaps['Paired'].colors
 
     X, y = datasets.spiral_generate()
 
     X_grid = np.mgrid[X[:,0].min() - 0.5:X[:,0].max() + 0.5:200j, X[:,1].min() - 0.5:X[:,1].max() + 0.5:200j].reshape(2,-1).T
-    y_grid_class = ge.predict(X_grid, expression, params['compiler'], params['n_registers'])
+    y_grid_class = ge.predict(X_grid, expression, params['problem'], params['compiler'], params['n_registers'])
 
     plt.scatter(X_grid[:,0], X_grid[:,1], c=y_grid_class, s=1, marker=',', cmap=mpl.colors.ListedColormap([colors[0], colors[2]]))
     data = plt.scatter(X[:,0], X[:,1], c=y, cmap=mpl.colors.ListedColormap([colors[1], colors[3]]))
 
     plt.xlabel("$x$")
     plt.ylabel("$y$")
-    plt.title("Decision Boundary")
+    plt.title(f"Intertwined Spirals Decision Boundary ({hardware})")
     plt.legend(data.legend_elements()[0], [0, 1])
 
     ax = plt.gca()
@@ -193,9 +229,9 @@ def main():
     output_path = os.path.join('visualisations', params['problem'], params['compiler'])
     os.makedirs(output_path, exist_ok=True)
 
-    plot_fitness(csv_results[best_run], output_path)
-    plot_genome_length(csv_results[best_run], output_path)
-    plot_confusion_matrix(y_test, best_run_prediction, output_path)
+    plot_fitness(csv_results[best_run], params, output_path)
+    plot_genome_length(csv_results[best_run], params, output_path)
+    plot_confusion_matrix(y_test, best_run_prediction, params, output_path)
 
     if params['problem'] == 'spiral':
         visualise_spiral(best_run_expression, params, output_path)

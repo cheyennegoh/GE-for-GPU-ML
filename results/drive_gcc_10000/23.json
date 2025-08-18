@@ -1,0 +1,31 @@
+{
+    "best_ind": {
+        "fitness": 0.48919999999999997,
+        "genome": [
+            168,
+            16,
+            147,
+            181,
+            167,
+            65,
+            16,
+            147,
+            253,
+            82
+        ],
+        "phenotype": "aq(\"r[0]\", \"x[26]\")",
+        "nodes": 2,
+        "depth": 6,
+        "used_codons": 5,
+        "invalid": false,
+        "n_wraps": 0,
+        "structure": [
+            0,
+            0,
+            3,
+            1,
+            26
+        ]
+    },
+    "execution_time": 646.9276421070099
+}

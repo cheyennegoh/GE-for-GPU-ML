@@ -1,0 +1,17 @@
+{
+    "params": {
+        "problem": "spiral",
+        "compiler": "nvcc",
+        "n_registers": 4,
+        "pop_size": 10,
+        "ngen": 1000,
+        "cxpb": 0.7959007523715759,
+        "mutpb": 0.11049112983612006,
+        "elite_size": 6,
+        "hof_size": 7,
+        "tournsize": 4,
+        "max_init_depth": 13,
+        "min_init_depth": 8,
+        "max_tree_depth": 45
+    }
+}
