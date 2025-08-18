@@ -5,24 +5,36 @@ Test f1-score: 0.5169 (standard deviation: 0.1068)
 Execution time: 0:01:54.170481
 
 Best individual:
-if (5 > x[1])
-r[0] = (6 != 0) ? r[0] / 6 : r[0] + 10e6;
-if (9 > x[1])
+if (4 > 5)
+r[0] -= r[1];
+if (r[1] > 8)
 r[0] = sinf(r[0]);
+r[0] -= 8;
+if (x[0] > x[0])
+r[0] -= r[2];
 if (x[1] > x[0])
-r[0] += 1;
+r[2] *= r[0];
+r[0] *= 3;
+if (r[1] > 7)
+r[0] *= r[0];
+r[2] -= r[0];
+if (3 > x[1])
+r[0] = cosf(r[0]);
+if (x[0] > r[3])
+r[0] = sinf(r[0]);
+r[0] *= 2;
 
-Training fitness: 0.41290322580645167
-Depth: 7
-Length of the genome: 2797
-Used portion of the genome: 0.0097
+Training fitness: 0.31612903225806455
+Depth: 14
+Length of the genome: 4398
+Used portion of the genome: 0.0191
 
               precision    recall  f1-score   support
 
-         0.0     0.6500    0.6500    0.6500        20
-         1.0     0.6316    0.6316    0.6316        19
+         0.0     0.6296    0.8500    0.7234        20
+         1.0     0.7500    0.4737    0.5806        19
 
-    accuracy                         0.6410        39
-   macro avg     0.6408    0.6408    0.6408        39
-weighted avg     0.6410    0.6410    0.6410        39
+    accuracy                         0.6667        39
+   macro avg     0.6898    0.6618    0.6520        39
+weighted avg     0.6883    0.6667    0.6539        39
 
