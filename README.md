@@ -6,25 +6,25 @@ This project was developed by Cheyenne Goh as part of the dissertation *Evolving
 
 ## Setup
 
-Install dependencies:
+**Install dependencies:**
 
 `pip install -r requirements.txt`
 
-Update GRAPE submodule:
+**Update GRAPE submodule:**
 
 `git submodule update --init --recursive`
 
 ## Usage
 
-Run optimiser:
+**Run optimiser:**
 
 `python optimiser.py`
 
-Run GE:
+**Run GE:**
 
 `python ge.py`
 
-Run analysis:
+**Run analysis:**
 
 `python analysis.py -i path/to/results`
 
