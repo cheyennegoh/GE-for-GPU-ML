@@ -22,12 +22,29 @@ from tqdm import tqdm
 from sklearn.metrics import accuracy_score, f1_score, classification_report, ConfusionMatrixDisplay
 
 def read_csv_results(directory):
+    """Reads results from run CSV files.
+
+    # Arguments
+        directory: A string containing the path to result directory.
+
+    # Returns
+        A list of pandas datafames for each run.
+    """
     roots = [os.path.splitext(f)[0] for f in os.listdir(directory) if f.endswith(".csv")]
     roots.sort(key=int)
     return [pd.read_csv(os.path.join(directory, f'{r}.csv'), sep='\t') for r in roots]
 
 
 def read_json_results(directory):
+    """Reads results from run JSON files.
+
+    # Arguments
+        directory: A string containing the path to result directory.
+
+    # Returns
+        A list of dictionaries for the best individual and execution time for 
+        each run.
+    """
     roots = [os.path.splitext(f)[0] for f in os.listdir(directory) if f.endswith(".json") and not f == 'params.json']
     roots.sort(key=int)
     
@@ -44,12 +61,16 @@ def read_json_results(directory):
 
 
 def plot_fitness(results, params, output_path):
-    """Plots fitness statistics.
+    """Plots fitness statistics and saves the image to a file.
 
-    Args:
-        results:
+    # Arguments
+        results: A dictionary containing individual results.
+        params: A dictionary containing GE parameters.
+        output_path: A string containing the path for the output directory.
+    
+    # Returns
+        None.
     """
-
     colors = mpl.colormaps['Paired'].colors
 
     gen = results['gen']
@@ -78,12 +99,16 @@ def plot_fitness(results, params, output_path):
 
 
 def plot_genome_length(results, params, output_path):
-    """Plots genome length statistics.
+    """Plots genome length statistics and saves the image to a file.
 
-    Args:
-        results:
+    # Arguments
+        results: A dictionary containing individual results.
+        params: A dictionary containing GE parameters.
+        output_path: A string containing the path for the output directory.
+    
+    # Returns
+        None.
     """
-
     colors = mpl.colormaps['Paired'].colors
 
     best_ind_length = results['best_ind_length']
@@ -110,7 +135,17 @@ def plot_genome_length(results, params, output_path):
 
 
 def plot_confusion_matrix(y_true, y_pred, params, output_path):
+    """Plots the confusion matrix and saves the image to a file.
 
+    # Arguments
+        y_true: A array-like object containing ground-truth values.
+        y_pred: A array-like object containing model predictions.
+        params: A dictionary containing GE parameters.
+        output_path: A string containing the path for the output directory.
+    
+    # Returns
+        None.
+    """
     if params['problem'] == 'spiral':
         dataset = 'Intertwined Spirals'
     elif params['problem'] == 'drive':
@@ -130,6 +165,16 @@ def plot_confusion_matrix(y_true, y_pred, params, output_path):
 
 
 def visualise_spiral(expression, params, output_path):
+    """Plots the spiral decision boundary and saves the image to a file.
+
+    # Arguments
+        expression: A string containing the code expression for an individual.
+        params: A dictionary containing GE parameters.
+        output_path: A string containing the path for the output directory.
+    
+    # Returns
+        None.
+    """
     if params['compiler'] == 'gcc':
         hardware = 'CPU'
     elif params['compiler'] == 'nvcc':
@@ -139,9 +184,11 @@ def visualise_spiral(expression, params, output_path):
 
     X, y = datasets.spiral_generate()
 
+    # Plot decision boundary
     X_grid = np.mgrid[X[:,0].min() - 0.5:X[:,0].max() + 0.5:200j, X[:,1].min() - 0.5:X[:,1].max() + 0.5:200j].reshape(2,-1).T
     y_grid_class = ge.predict(X_grid, expression, params['problem'], params['compiler'], params['n_registers'])
 
+    # Plot data points
     plt.scatter(X_grid[:,0], X_grid[:,1], c=y_grid_class, s=1, marker=',', cmap=mpl.colors.ListedColormap([colors[0], colors[2]]))
     data = plt.scatter(X[:,0], X[:,1], c=y, cmap=mpl.colors.ListedColormap([colors[1], colors[3]]))
 
@@ -157,6 +204,17 @@ def visualise_spiral(expression, params, output_path):
 
 
 def visualise_drive(expression, params, output_path):
+    """Produces images to visualise the annotation on a sample test image from 
+    DRIVE.
+
+    # Arguments
+        expression: A string containing the code expression for an individual.
+        params: A dictionary containing GE parameters.
+        output_path: A string containing the path for the output directory.
+    
+    # Returns
+        None.
+    """
     image, manual, mask, X_sample = datasets.drive_get_sample_image()
     y_sample_class = ge.predict(X_sample, expression, params['problem'], params['compiler'], params['n_registers'])
     annotation = datasets.drive_annotate_sample_image(mask, y_sample_class)

@@ -12,11 +12,34 @@ import json
 import argparse
 
 class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
+    """BaseEstimator and ClassifierMixin wrapper that implements a custom 
+    estimator for grammatical evolution by calling functions from the ge.py 
+    script.
+    """
     def __init__(self, problem='drive', compiler='gcc', n_registers=8, 
                  pop_size=100, ngen=1000, cxpb=0.6, mutpb=0.030339818402497533,
                  elite_size=5, hof_size=7, tournsize=3, max_init_depth=12, 
                  min_init_depth=7, max_tree_depth=69):
-        
+        """Initialises the GrammaticalEvolution object.
+
+        # Arguments
+            problem: A string indicating the problem.
+            compiler: A string indicating the compiler to use.
+            n_registers: Number of registers as an integer.
+            pop_size: Population size as an integer.
+            ngen: Number of generations as an integer.
+            cxpb: Probability of crossover as a float.
+            mutpb: Probability of mutation as a float.
+            elite_size: Elite size as an integer.
+            hof_size: Hall-of-fame size as an integer.
+            tournsize: Tournament size as an integer.
+            max_init_depth: Maximum initial depth as an integer.
+            min_init_depth: Minimum initial depth as an integer.
+            max_tree_depth: Maximum tree depth as an integer.
+
+        # Returns
+            None.
+        """
         self.problem = problem
         self.compiler = compiler
         self.n_registers = n_registers
@@ -33,6 +56,15 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
 
 
     def fit(self, X, y):
+        """Fit the model to data matrix X and targets y.
+
+        # Arguments
+            X: The input data as an array-like object.
+            y: The target values as an array-like object.
+
+        # Returns
+            Trained estimator object.
+        """
         params = self.constrain_params(vars(self))
         print(f'\nParams: {params}\n')
 
@@ -42,6 +74,14 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
 
 
     def predict(self, X):
+        """Predict using the grammatical evolution classifier.
+
+        # Arguments
+            X: The input data as an array-like object.
+
+        # Returns
+            Predicted classes as an array-like object.
+        """
         return ge.predict(X, 
                           ge.evaluate_expression(self.best_individual.phenotype),
                           self.problem,
@@ -50,6 +90,15 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
     
 
     def score(self, X, y):
+        """Return accuracy on provided data and labels.
+
+        # Arguments
+            X: Test samples as an array-like object.
+            y: True labels for X as an array-like object.
+
+        # Returns
+            None.
+        """
         return 1 - ge.fitness_eval([self.best_individual], 
                                    ([X, y], 
                                     self.compiler, 
@@ -59,6 +108,15 @@ class GrammaticalEvolution(BaseEstimator, ClassifierMixin):
 
     @staticmethod
     def constrain_params(params, n_evals=100000):
+        """Apply constraints to ensure that parameters are valid.
+
+        # Arguments
+            params: A dictionary containing GE parameters.
+            n_evals: Desired total number of evaluations as an integer.
+
+        # Returns
+            Dictionary of parameters modified to ensure validity.
+        """
         keys = ['problem', 'compiler', 'n_registers', 'pop_size', 'ngen', 
                 'cxpb', 'mutpb', 'elite_size', 'hof_size', 'tournsize', 
                 'max_init_depth', 'min_init_depth', 'max_tree_depth']

@@ -11,6 +11,16 @@ from sklearn.model_selection import train_test_split
 from imblearn.under_sampling import RandomUnderSampler
 
 def spiral(n_samples=None, test_size=0.2, random_seed=42):
+    """Generates train and test data for the spiral problem.
+
+    # Arguments
+        n_samples: Number of samples as an integer or None.
+        test_size: A float indicating the proportion for the test set.
+        random_seed: Random seed value as an integer.
+    
+    # Returns
+        A tuple of NumPy arrays with train and test data.
+    """
     X, y = spiral_generate()
 
     X_train, X_test, y_train, y_test = train_test_split(X, 
@@ -25,11 +35,13 @@ def spiral(n_samples=None, test_size=0.2, random_seed=42):
 
 
 def spiral_generate():
-    '''
-        Generates training data for a network with 2 inputs and 1 output.
+    """Generates training data for the spiral problem with 2 inputs and 1 
+    output. Adapted from mkspiral.c by Alexis P. Wieland of the MITRE 
+    Corporation.
 
-        Adapted from mkspiral.c by Alexis P. Wieland of the MITRE Corporation.
-    '''
+    # Returns
+        A tuple of NumPy arrays containing input and output values.
+    """
     ds = []
 
     for i in range(96 + 1):
@@ -51,6 +63,16 @@ def spiral_generate():
 
 
 def drive(n_samples=None, test_size=0.2, random_seed=42):
+    """Generates train and test data for the DRIVE dataset.
+
+    # Arguments
+        n_samples: Number of samples as an integer or None.
+        test_size: A float indicating the proportion for the test set.
+        random_seed: Random seed value as an integer.
+    
+    # Returns
+        A tuple of NumPy arrays with train and test data.
+    """
     image_ids = range(21, 40 + 1)
     image_ids_train, image_ids_test = train_test_split(image_ids,
                                                        test_size=test_size, 
@@ -66,6 +88,16 @@ def drive(n_samples=None, test_size=0.2, random_seed=42):
 
 
 def drive_preprocessing(image_ids, window_size=7):
+    """Imports and applies preprocessing to the DRIVE dataset to produce 
+    pixel-wise samples.
+
+    # Arguments
+        image_ids: List of image IDs to include in dataset.
+        window_size: Dimension for sliding window kernel as an integer.
+    
+    # Returns
+        A tuple of NumPy arrays containing input and output values.
+    """
     handle = 'andrewmvd/drive-digital-retinal-images-for-vessel-extraction'
     drive_path = os.path.join(kagglehub.dataset_download(handle), 'DRIVE', 'training')
 
@@ -93,6 +125,18 @@ def drive_preprocessing(image_ids, window_size=7):
 
 
 def drive_load_image(drive_path, image_id, channel='G', greyscale=False):
+    """Loads an image from the DRIVE dataset.
+
+    # Arguments
+        drive_path: String containing the path to the DRIVE directory.
+        image_id: An image ID.
+        channel: A single character to indicate RGB channel or None.
+        greyscale: Boolean value indicating whether or not to use greyscale.
+    
+    # Returns
+        A tuple containing the image, manual annotation, and mask as NumPy 
+        arrays.
+    """
     image_path = os.path.join(drive_path, 'images', f'{image_id}_training.tif')
     with Image.open(image_path) as im:
         if channel:
@@ -113,6 +157,16 @@ def drive_load_image(drive_path, image_id, channel='G', greyscale=False):
 
 
 def drive_get_sample_image(test_size=0.2, random_seed=42):
+    """Retrieves a single sample image from the test set.
+
+    # Arguments
+        test_size: A float indicating the proportion for the test set.
+        random_seed: Random seed value as an integer.
+    
+    # Returns
+        A tuple containing the image, manual annotation, mask, and sample data 
+        as NumPy arrays.
+    """
     handle = 'andrewmvd/drive-digital-retinal-images-for-vessel-extraction'
     drive_path = os.path.join(kagglehub.dataset_download(handle), 'DRIVE', 'training')
 
@@ -131,6 +185,15 @@ def drive_get_sample_image(test_size=0.2, random_seed=42):
 
 
 def drive_annotate_sample_image(mask, y_sample):
+    """Generates an annotated image using predictions.
+
+    # Arguments
+        mask: The mask image as a NumPy array.
+        y_sample: Predictions for the image sample from the test set.
+    
+    # Returns
+        Annotated image as a NumPy array.
+    """
     annotation = mask.copy()
     y_sample_iter = iter(y_sample)
 

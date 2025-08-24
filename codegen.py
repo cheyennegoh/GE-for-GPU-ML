@@ -6,11 +6,21 @@ import tempfile
 import struct
 import numpy as np
 
-# DEBUG
-import time
-import sys
+# Uncomment for timing measurements
+# import time
 
 def generate_code_gcc(x, expressions, n_registers):
+    """Generates content for a C code file for compilation with GCC.
+
+    # Arguments
+        x: A NumPy array of input samples.
+        expressions: A list of strings containing code expressions for 
+            individuals in the population.
+        n_registers: Number of registers as an integer.
+    
+    # Returns
+        A string containing contents for a C source code file.
+    """
     include = ('#include <math.h>\n'
                '#include <stdio.h>\n'
                '#include <stdlib.h>\n'
@@ -76,6 +86,17 @@ def generate_code_gcc(x, expressions, n_registers):
 
 
 def generate_code_nvcc(x, expressions, n_registers):
+    """Generates content for a CUDA code file for compilation with NVCC.
+
+    # Arguments
+        x: A NumPy array of input samples.
+        expressions: A list of strings containing code expressions for 
+            individuals in the population.
+        n_registers: Number of registers as an integer.
+    
+    # Returns
+        A string containing contents for a CUDA source code file.
+    """
     include = ('#include "cuda_runtime.h"\n'
                '#include "device_launch_parameters.h"\n'
                '#include <stdio.h>\n')
@@ -148,15 +169,30 @@ def generate_code_nvcc(x, expressions, n_registers):
 
 
 def run_program(x, expressions, compiler, n_registers):
+    """Performs steps relating to generation of C or CUDA code including 
+    generation, compilation, and execution of the program.
+
+    # Arguments
+        x: A NumPy array of input samples.
+        expressions: A list of strings containing code expressions for 
+            individuals in the population.
+        compiler: A string indicating the compiler to use.
+        n_registers: Number of registers as an integer.
+    
+    # Returns
+        A NumPy array of floating-point values with predictions.
+    """
     with tempfile.TemporaryDirectory() as tmpdirname:
         input_path = os.path.join(tmpdirname, 'input.bin')
         file_content = x.astype('f').tobytes()
 
+        # Uncomment for timing measurements
         # start_time = time.time()
 
         with open(input_path, "wb") as f:
             f.write(file_content)
 
+        # Uncomment for timing measurements
         # duration = time.time() - start_time
         # print(f'\nWriting input: {duration:.6f}s', end=' | ')
 
@@ -167,11 +203,13 @@ def run_program(x, expressions, compiler, n_registers):
             code = generate_code_nvcc(x, expressions, n_registers)
             program_path = os.path.join(tmpdirname, 'program.cu')
 
+        # Uncomment for timing measurements
         # start_time = time.time()
 
         with open(program_path, 'w') as f:
             f.write(code)
 
+        # Uncomment for timing measurements
         # duration = time.time() - start_time
         # print(f'Writing program: {duration:.6f}s', end=' | ')
 
@@ -182,29 +220,33 @@ def run_program(x, expressions, compiler, n_registers):
         elif compiler == 'nvcc':
             compile_command = ['nvcc', program_path, '-o', executable_path, '-use_fast_math', '-O0',  '-Xptxas', '-O0', '-Xcicc', '-O0']
         
+        # Uncomment for timing measurements
         # start_time = time.time()
 
         subprocess.run(compile_command)
 
+        # Uncomment for timing measurements
         # duration = time.time() - start_time
         # print(f'Compilation: {duration:.6f}s', end=' | ')
 
         data_path = os.path.join(tmpdirname, 'data.bin')
 
+        # Uncomment for timing measurements
         # start_time = time.time()
 
         subprocess.run([executable_path, input_path, data_path])
 
+        # Uncomment for timing measurements
         # duration = time.time() - start_time
         # print(f'Execution: {duration:.6f}s', end=' | ')
-
         # start_time = time.time()
 
         with open(data_path, "rb") as f:
             file_content = f.read()
             array = struct.unpack(f'{len(file_content) // struct.calcsize("f")}f', 
                                   file_content)
-        
+    
+        # Uncomment for timing measurements
         # duration = time.time() - start_time
         # print(f'Reading data: {duration:.6f}s')
 

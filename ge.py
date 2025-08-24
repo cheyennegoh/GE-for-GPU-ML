@@ -10,9 +10,6 @@ import grape.algorithms as algorithms
 
 from deap import creator, base, tools
 
-# DEBUG
-import sys
-
 import os
 import argparse
 import time
@@ -27,8 +24,19 @@ import json
 import warnings
 warnings.filterwarnings("ignore")
 
+# Uncomment for timing measurements
+# import sys
 
 def set_dataset(problem, n_samples=None):
+    """Sets dataset for the problem.
+
+    # Arguments
+        problem: A string indicating the problem.
+        n_samples: Number of samples as an integer or None.
+    
+    # Returns
+        A tuple of NumPy arrays with train and test data.
+    """
     if problem == 'spiral':
         X_train, X_test, y_train, y_test = datasets.spiral(n_samples=n_samples)
         
@@ -39,25 +47,43 @@ def set_dataset(problem, n_samples=None):
 
 
 def set_grammar(problem, n_registers):
+    """Sets the BNF grammar file path for the problem.
+
+    # Arguments
+        problem: A string indicating the problem.
+        n_registers: Number of registers as an integer.
+    
+    # Returns
+        A grape.Grammar object.
+    """
     stem = '_'.join((problem, str(n_registers)))
     return grape.Grammar(os.path.join('grammars', f'{stem}.bnf'))
 
 
 def mae(y, yhat):
-    """
-    Calculate mean absolute error between inputs.
+    """Calculates the mean absolute error between inputs.
 
-    :param y: The expected input (i.e. from dataset).
-    :param yhat: The given input (i.e. from phenotype).
-    :return: The mean absolute error.
-    """
+    # Arguments
+        y: The expected input from the dataset as a NumPy array.
+        yhat: The given input from the phenotype as a NumPy array.
     
+    # Returns
+        The mean absolute error as a float.
+    """
     compare = np.equal(y, yhat)
 
     return 1 - np.mean(compare)
 
 
 def evaluate_expression(phenotype):
+    """Evaluates the code expression for an individual.
+
+    # Arguments
+        phenotype: The phenotype of an individual as a string.
+    
+    # Returns
+        The code expression as a string.
+    """
     expression = eval(phenotype)
 
     assert np.isrealobj(expression)
@@ -66,6 +92,18 @@ def evaluate_expression(phenotype):
 
 
 def fitness_eval(population, points, train=True):
+    """Evaluates and assigns the individual fitnesses for a population.
+
+    # Arguments
+        population: A list of grape.Individual objects.
+        points: A tuple containing data points, compiler, and number of 
+            registers.
+        train: A boolean indicating whether to train in this fitness 
+            evaluation.
+    
+    # Returns
+        Fitnesses of the population if training and otherwise None.
+    """
     (x, y), compiler, n_registers = points
 
     expressions = []
@@ -77,13 +115,11 @@ def fitness_eval(population, points, train=True):
 
     pred = codegen.run_program(x, expressions, compiler, n_registers)
 
-    # pred_gcc = codegen.run_program(x, expressions, "gcc", n_registers)
-    # pred_nvcc = codegen.run_program(x, expressions, "nvcc", n_registers)
-    # delta = abs(pred_gcc - pred_nvcc)
-    # print(f'min: {np.min(delta)}')
-    # print(f'max: {np.max(delta)}')
-    # print(f'mean: {np.mean(delta)}')
-    # print(f'median: {np.median(delta)}')
+    # Uncomment for timing measurements
+    # print("gcc")
+    # codegen.run_program(x, expressions, "gcc", n_registers)
+    # print("nvcc")
+    # codegen.run_program(x, expressions, "nvcc", n_registers)
     # sys.exit(0)
 
     fitnesses = []
@@ -113,6 +149,14 @@ def fitness_eval(population, points, train=True):
 
 
 def create_toolbox(tournsize):
+    """Creates a toolbox using primitive set and declared parameters.
+
+    # Arguments
+        primitiveSet: A deap.gp.PrimitiveSet object.
+
+    # Returns
+        A deap.base.Toolbox object
+    """
     toolbox = base.Toolbox()
 
     creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -127,6 +171,12 @@ def create_toolbox(tournsize):
 
 
 def create_stats():
+    """Creates the statistics object.
+
+    # Returns
+        A deap.tools.Statistics object.
+    """
+
     stats = tools.Statistics(key=lambda ind: ind.fitness.values)
 
     stats.register("avg", np.nanmean)
@@ -138,6 +188,14 @@ def create_stats():
 
 
 def display_best(hof):
+    """Prints details on the best individual.
+
+    # Arguments
+        hof: A deap.tools.HallOfFame object.
+
+    # Returns
+        None.
+    """
     print("\nBest individual:\n" + eval(hof.items[0].phenotype) + "\n")
     print("Training fitness:", hof.items[0].fitness.values[0])
     print("Depth:", hof.items[0].depth)
@@ -146,6 +204,18 @@ def display_best(hof):
 
 
 def record_results(output_path, run, report_items, ngen, logbook):
+    """Writes results for the run to a CSV file.
+
+    # Arguments
+        output_path: A string containing the path for the output directory.
+        run: An integer indicating the run number.
+        report_items: A list of items to report.
+        ngen: Total number of generations as an integer.
+        logbook: A deap.tools.support.Logbook object.
+
+    # Returns
+        None.
+    """
     with open(os.path.join(output_path, f'{run}.csv'), "w", encoding='UTF8', newline='') as csvfile:
         writer = csv.writer(csvfile, delimiter='\t')
         writer.writerow(report_items)
@@ -155,6 +225,17 @@ def record_results(output_path, run, report_items, ngen, logbook):
 
 
 def save_run_info(output_path, run, hof, duration):
+    """Writes information on the run to a JSON file.
+
+    # Arguments
+        output_path: A string containing the path for the output directory.
+        run: An integer indicating the run number.
+        hof: A deap.tools.HallOfFame object.
+        duration: The exeuction time in seconds as a float.
+
+    # Returns
+        None.
+    """
     best_ind = vars(hof.items[0])
     best_ind['fitness'] = best_ind['fitness'].values[0]
 
@@ -167,7 +248,31 @@ def run_algorithm(X_train, y_train, problem, compiler, n_registers, pop_size,
                   ngen, cxpb, mutpb, elite_size, hof_size, tournsize, 
                   max_init_depth, min_init_depth, max_tree_depth, run=0, 
                   output_path=None):
-    
+    """Runs the main flow of the GE algorithm.
+
+    # Arguments
+        X_train: A NumPy array containing training features.
+        y_train: A NumPy array containing expected training classes.
+        problem: A string indicating the problem.
+        compiler: A string indicating the compiler to use.
+        n_registers: Number of registers as an integer.
+        pop_size: Population size as an integer.
+        ngen: Number of generations as an integer.
+        cxpb: Probability of crossover as a float.
+        mutpb: Probability of mutation as a float.
+        elite_size: Elite size as an integer.
+        hof_size: Hall-of-fame size as an integer.
+        tournsize: Tournament size as an integer.
+        max_init_depth: Maximum initial depth as an integer.
+        min_init_depth: Minimum initial depth as an integer.
+        max_tree_depth: Maximum tree depth as an integer.
+        run: Current run number.
+        output_path: A string containing the path for the output directory or 
+            None.
+
+    # Returns
+        Best individual as a grape.Individual object.
+    """
     bnf_grammar = set_grammar(problem, n_registers)
     if problem == 'drive':
         n_registers += 1
@@ -234,6 +339,32 @@ def multiple_runs(X_train, y_train, problem, compiler, n_registers, pop_size,
                   ngen, cxpb, mutpb, elite_size, hof_size, tournsize, 
                   max_init_depth, min_init_depth, max_tree_depth, n_runs=30, 
                   output_path=None):
+
+    """Runs the main flow of the GE algorithm multiple times.
+
+    # Arguments
+        X_train: A NumPy array containing training features.
+        y_train: A NumPy array containing expected training classes.
+        problem: A string indicating the problem.
+        compiler: A string indicating the compiler to use.
+        n_registers: Number of registers as an integer.
+        pop_size: Population size as an integer.
+        ngen: Number of generations as an integer.
+        cxpb: Probability of crossover as a float.
+        mutpb: Probability of mutation as a float.
+        elite_size: Elite size as an integer.
+        hof_size: Hall-of-fame size as an integer.
+        tournsize: Tournament size as an integer.
+        max_init_depth: Maximum initial depth as an integer.
+        min_init_depth: Minimum initial depth as an integer.
+        max_tree_depth: Maximum tree depth as an integer.
+        n_run: Number of runs to execute as an integer.
+        output_path: A string containing the path for the output directory or 
+            None.
+
+    # Returns
+        None.
+    """
     
     for run in range(n_runs):
         print(f"\nRun: {run}\n")
@@ -248,6 +379,17 @@ def multiple_runs(X_train, y_train, problem, compiler, n_registers, pop_size,
 
 
 def predict(X, expression, problem, compiler, n_registers):
+    """Runs the main flow of the GE algorithm multiple times.
+
+    # Arguments
+        X: A NumPy array containing input features.
+        expression: A string containing the code expression for an individual.
+        compiler: A string indicating the compiler to use.
+        n_registers: Number of registers as an integer.
+
+    # Returns
+        None.
+    """
     if problem == 'drive':
         n_registers += 1
     
